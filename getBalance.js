@@ -175,7 +175,7 @@ const formatOrderStatus = (state) => {
 const main = async () => {
     try {
         const balances = await getFuturesBalances();
-        console.log("Trading Account Balance");
+        console.log("Trading Account Balance:");
         if (balances && balances.length > 0) {
             for (let bal of balances) {
                 if (bal.balance != 0) {
@@ -183,8 +183,9 @@ const main = async () => {
                 }
             }
         }
+        console.log();
 
-        console.log("Funding Account Balance");
+        console.log("Funding Account Balance:");
         const fBalances = await getFundingAccountBalances();
         if (fBalances && fBalances.length > 0) {
             for (let bal of fBalances) {
@@ -192,15 +193,23 @@ const main = async () => {
                     console.log(bal.asset, bal.balance);
                 }
             }
+        } else {
+            console.log(`No balance`);
         }
+        console.log();
 
+        console.log("Current Postions:");
         const positions = await getPositions();
         if (positions && positions.length > 0) {
             for (let pos of positions) {
                 console.log(pos.symbol, pos.positionAmt, pos.unrealizedProfit);
             }
+        } else {
+            console.log("No position");
         }
+        console.log();
 
+        console.log("Open Orders:");
         const openOrders = await getOpenOrders();
         if (openOrders && openOrders.length > 0) {
             for (let order of openOrders) {
@@ -211,6 +220,8 @@ const main = async () => {
                     order.originalQuantity
                 );
             }
+        } else {
+            console.log("No orders");
         }
     } catch (e) {
         console.error(e);
