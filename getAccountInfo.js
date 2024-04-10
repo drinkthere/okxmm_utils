@@ -20,14 +20,20 @@ client = new RestClient(
 
 const getFuturesBalances = async () => {
     const result = await client.getBalance();
-    const details = result[0].details;
+    if (result.length == 0) {
+        return 0;
+    }
+
     const ret = [];
-    for (let detail of details) {
-        ret.push({
-            asset: detail.ccy,
-            balance: parseFloat(detail.eq),
-            notional: parseFloat(detail.disEq),
-        });
+    const details = result[0].details;
+    if (details && details.length > 1) {
+        for (let detail of details) {
+            ret.push({
+                asset: detail.ccy,
+                balance: parseFloat(detail.eq),
+                notional: parseFloat(detail.disEq),
+            });
+        }
     }
     return ret;
 };
@@ -37,13 +43,16 @@ const getFundingAccountBalances = async () => {
     if (result.length == 0) {
         return 0;
     }
-    const details = result[0].details;
+
     const ret = [];
-    for (let detail of details) {
-        ret.push({
-            asset: detail.ccy,
-            balance: detail.eq,
-        });
+    const details = result[0].details;
+    if (details && details.length > 1) {
+        for (let detail of details) {
+            ret.push({
+                asset: detail.ccy,
+                balance: detail.eq,
+            });
+        }
     }
     return ret;
 };
@@ -165,14 +174,56 @@ const formatOrderStatus = (state) => {
 
 const main = async () => {
     try {
+        const balances = await getFuturesBalances();
+        console.log("Trading Account Balance:");
+        if (balances && balances.length > 0) {
+            for (let bal of balances) {
+                if (bal.balance != 0) {
+                    console.log(bal.asset, bal.balance);
+                }
+            }
+        }
+        console.log();
+
+        console.log("Funding Account Balance:");
+        const fBalances = await getFundingAccountBalances();
+        if (fBalances && fBalances.length > 0) {
+            for (let bal of fBalances) {
+                if (bal.balance != 0) {
+                    console.log(bal.asset, bal.balance);
+                }
+            }
+        } else {
+            console.log(`No balance`);
+        }
+        console.log();
+
+        console.log("Current Postions:");
         const positions = await getPositions();
         if (positions && positions.length > 0) {
             for (let pos of positions) {
                 console.log(pos.symbol, pos.positionAmt, pos.unrealizedProfit);
             }
-            console.log(`position length is ${positions.length}`);
+            console.log("position length:", positions.length);
         } else {
-            console.log(`position length is 0`);
+            console.log("No position");
+        }
+        console.log();
+
+        console.log("Open Orders:");
+        const openOrders = await getOpenOrders();
+        if (openOrders && openOrders.length > 0) {
+            for (let order of openOrders) {
+                console.log(
+                    order.symbol,
+                    order.side,
+                    order.originalPrice,
+                    order.originalQuantity
+                );
+            }
+            console.log("orders length:", openOrders.length);
+        } else {
+            console.log("No orders");
         }
     } catch (e) {
         console.error(e);
