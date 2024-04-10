@@ -22,12 +22,14 @@ const getFuturesBalances = async () => {
     const result = await client.getBalance();
     const details = result[0].details;
     const ret = [];
-    for (let detail of details) {
-        ret.push({
-            asset: detail.ccy,
-            balance: parseFloat(detail.eq),
-            notional: parseFloat(detail.disEq),
-        });
+    if (details && details.length > 1) {
+        for (let detail of details) {
+            ret.push({
+                asset: detail.ccy,
+                balance: parseFloat(detail.eq),
+                notional: parseFloat(detail.disEq),
+            });
+        }
     }
     return ret;
 };
