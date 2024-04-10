@@ -20,8 +20,12 @@ client = new RestClient(
 
 const getFuturesBalances = async () => {
     const result = await client.getBalance();
-    const details = result[0].details;
+    if (result.length == 0) {
+        return 0;
+    }
+
     const ret = [];
+    const details = result[0].details;
     if (details && details.length > 1) {
         for (let detail of details) {
             ret.push({
@@ -39,13 +43,16 @@ const getFundingAccountBalances = async () => {
     if (result.length == 0) {
         return 0;
     }
-    const details = result[0].details;
+
     const ret = [];
-    for (let detail of details) {
-        ret.push({
-            asset: detail.ccy,
-            balance: detail.eq,
-        });
+    const details = result[0].details;
+    if (details && details.length > 1) {
+        for (let detail of details) {
+            ret.push({
+                asset: detail.ccy,
+                balance: detail.eq,
+            });
+        }
     }
     return ret;
 };
