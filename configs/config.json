@@ -1,0 +1,16 @@
+{
+    "hedgeParams": {
+        "BTC-USDT-SWAP": {
+            "threshold": 5,
+            "hedgeSize": 1,
+            "gapPercent": 0.0005,
+            "decimals": 1
+        },
+        "ETH-USDT-SWAP": {
+            "threshold": 5,
+            "hedgeSize": 1,
+            "gapPercent": 0.0005,
+            "decimals": 2
+        }
+    }
+}
