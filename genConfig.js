@@ -1,13 +1,10 @@
 const { RestClient, WebsocketClient } = require("okx-api");
 const Binance = require("node-binance-api");
-const { v4: uuidv4 } = require("uuid");
+const path = require("path");
 const {
-    scheduleLoopTask,
-    sleep,
     getDecimals,
     deleteFilesInDirectory,
     writeStringToFile,
-    fileExists,
 } = require("./utils/run");
 
 // 加载.env文件
@@ -94,7 +91,7 @@ const main = async () => {
         deleteFilesInDirectory(directory);
 
         // 获取okx 支持的futures
-        const result = await okx.getInstruments("SWAP");
+        const result = await client.getInstruments("SWAP");
         let okxFuturesMap = {};
         let okxFuturesAsset = new Set();
         if (result != null && result.length > 0) {
@@ -117,7 +114,7 @@ const main = async () => {
         }
 
         // 获取okx 支持的spot
-        const okxSpotResult = await okx.getInstruments("SPOT");
+        const okxSpotResult = await client.getInstruments("SPOT");
         let okxSpotAsset = new Set();
         if (okxSpotResult != null && okxSpotResult.length > 0) {
             for (let symbol of okxSpotResult) {
@@ -213,63 +210,49 @@ const main = async () => {
             "LINK-USDT-SWAP",
             "LTC-USDT-SWAP",
             "OP-USDT-SWAP",
+            "UNI-USDT-SWAP",
         ];
 
-        for (let i = 0; i < accountArr.length; i++) {}
-        let paramMap = {
-            "BTC-USDT-SWAP": {
-                FirstOrderMargin: 0.00025,
-                FirstOrderRangePercent: 0.00005,
-                GapSizePercent: 0.00025,
-                ForgivePercent: 0.999985,
-                TickerShift: 0.00002,
-            },
-            "BTC-USDT-SWAP": {
-                FirstOrderMargin: 0.00025,
-                FirstOrderRangePercent: 0.00005,
-                GapSizePercent: 0.00025,
-                ForgivePercent: 0.999985,
-                TickerShift: 0.00002,
-            },
-        };
-        let configs = {};
-        for (let i = 0; i < intersection.length; i++) {
-            let symbol = intersection[i];
-            let instId = `${symbol}-USDT-SWAP`;
-            if (!validInstId.includes(instId)) {
-                continue;
+        for (let i = 0; i < accountArr.length; i++) {
+            let configs = {};
+            for (let j = 0; j < intersection.length; j++) {
+                let symbol = intersection[j];
+                let instId = `${symbol}-USDT-SWAP`;
+                if (!validInstId.includes(instId)) {
+                    continue;
+                }
+                let instCfg = okxFuturesMap[instId];
+                configs[instId] = {
+                    ContractNum: 1,
+                    VolPerCont: parseFloat(instCfg.ctVal),
+                    BaseAsset: symbol,
+                    Leverage: 10,
+                    EffectiveNum: 1,
+                    Precision: [getDecimals(instCfg.tickSz), 0],
+                    FirstOrderMargin: firstOrderMarginArr[i],
+                    FirstOrderRangePercent: firstOrderRangePercentArr[i],
+                    GapSizePercent: gapSizePercentArr[i],
+                    ForgivePercent: forgivePercentArr[i],
+                    TickerShift: tickerShiftArr[i],
+                    MaxOrderNum: 3,
+                    FarOrderNum: 5,
+                    VolatilityE: 0.75,
+                    VolatilityD: volatilityDArr[i],
+                    VolatilityG: volatilityGArr[i],
+                    TickerShiftStartNum: ["BTC", "ETH"].includes(symbol)
+                        ? minimumTickershiftMap["CORE"]
+                        : minimumTickershiftMap["OTHER"],
+                    MaxContractNum: ["BTC", "ETH"].includes(symbol)
+                        ? maxPositionMap["CORE"]
+                        : maxPositionMap["OTHER"],
+                    BreakEvenX: breakEvenXArr[i],
+                };
             }
-            let instCfg = okxFuturesMap[instId];
-            configs[instId] = {
-                ContractNum: 1,
-                VolPerCont: parseFloat(instCfg.ctVal),
-                BaseAsset: symbol,
-                Leverage: 10,
-                EffectiveNum: 1,
-                Precision: [getDecimals(instCfg.tickSz), 0],
-                FirstOrderMargin: firstOrderMarginArr[i],
-                FirstOrderRangePercent: firstOrderRangePercentArr[i],
-                GapSizePercent: gapSizePercentArr[i],
-                ForgivePercent: forgivePercentArr[i],
-                TickerShift: tickerShiftArr[i],
-                MaxOrderNum: 3,
-                FarOrderNum: 5,
-                VolatilityE: 0.75,
-                VolatilityD: volatilityDArr[i],
-                VolatilityG: volatilityGArr[i],
-                TickerShiftStartNum: ["BTC", "ETH"].includes(symbol)
-                    ? minimumTickershiftMap["CORE"]
-                    : minimumTickershiftMap["OTHER"],
-                MaxContractNum: ["BTC", "ETH"].includes(symbol)
-                    ? maxPositionMap["CORE"]
-                    : maxPositionMap["OTHER"],
-                BreakEvenX: breakEvenXArr[i],
-            };
+            const formattedJSON = JSON.stringify(configs, null, 4);
+            const filePath = path.join(directory, `${accountArr[i]}.json`);
+            writeStringToFile(filePath, formattedJSON);
+            console.log(JSON.stringify(Object.keys(configs), null, 4));
         }
-        const formattedJSON = JSON.stringify(configs, null, 4);
-        const filePath = path.join(directory, `${accountArr[i]}.json`);
-        writeStringToFile(filePath, formattedJSON);
-        console.log(JSON.stringify(Object.keys(configs), null, 4));
     } catch (e) {
         console.error(e);
     }
