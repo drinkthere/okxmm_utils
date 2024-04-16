@@ -216,6 +216,7 @@ const main = async () => {
             for (let order of openOrders) {
                 console.log(
                     order.symbol,
+                    order.clientOrderId,
                     order.side,
                     order.originalPrice,
                     order.originalQuantity
