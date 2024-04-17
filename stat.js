@@ -40,12 +40,10 @@ const statOrderService = new StatOrderService();
 
 let volContractMap = {};
 const loadVolContractInfo = async () => {
-    let symbols = await exchangeClient.getFuturesSymbols();
-    symbols = symbols.filter(
-        (symbolInfo) => symbolInfo.symbol.indexOf("USDC") == -1
-    );
-    for (let symbolInfo of symbols) {
-        volContractMap[symbolInfo.symbol] = parseFloat(symbolInfo.ctVal);
+    let insts = await exchangeClient.getInstruments("SWAP");
+    insts = insts.filter((item) => item.instID.indexOf("USDC") == -1);
+    for (let inst of insts) {
+        volContractMap[inst.instID] = parseFloat(inst.ctVal);
     }
 };
 

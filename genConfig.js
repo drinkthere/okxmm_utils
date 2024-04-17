@@ -1,49 +1,46 @@
-const { RestClient, WebsocketClient } = require("okx-api");
-const Binance = require("node-binance-api");
 const path = require("path");
 const {
     getDecimals,
     deleteFilesInDirectory,
     writeStringToFile,
+    fileExists,
 } = require("./utils/run");
+
+const cfgFile = `./configs/config.json`;
+if (!fileExists(cfgFile)) {
+    log(`config file ${cfgFile} does not exits`);
+    process.exit();
+}
+const configs = require(cfgFile);
+
+const OkxClient = require("./clients/okx");
+const BinanceClient = require("./clients/binance");
+const StatOrderService = require("./services/statOrder");
+const keyIndex = 0;
 
 // 加载.env文件
 const dotenv = require("dotenv");
+const { Console } = require("console");
 dotenv.config();
-const apiKeyArr = process.env.OKX_API_KEY.split(",");
-const apiSecretArr = process.env.OKX_API_SECRET.split(",");
-const apiPasswordArr = process.env.OKX_API_PASSWORD.split(",");
-const keyIndex = process.env.KEY_INDEX;
-client = new RestClient(
-    {
-        apiKey: apiKeyArr[keyIndex],
-        apiSecret: apiSecretArr[keyIndex],
-        apiPass: apiPasswordArr[keyIndex],
-    },
-    "prod"
-);
+const apiKeyArr = process.env.OKX_STAT_API_KEY.split(",");
+const apiSecretArr = process.env.OKX_STAT_API_SECRET.split(",");
+const apiPasswordArr = process.env.OKX_STAT_API_PASSWORD.split(",");
 
-// 初始化 binance client
 let options = {
-    family: 4,
-    useServerTime: true,
-    recvWindow: 10000,
-    APIKEY: "",
-    APISECRET: "",
+    API_KEY: apiKeyArr[keyIndex],
+    API_SECRET: apiSecretArr[keyIndex],
+    API_PASSWORD: apiPasswordArr[keyIndex],
 };
-const binance = new Binance().options(options);
+const okxClient = new OkxClient(options);
+const binanceClient = new BinanceClient({
+    APIKEY: process.env.BINANCE_API_KEY,
+    APISECRET: process.env.BINANCE_API_SECRET,
+});
+let okxFuturesConfigMap = {};
+let bnFuturesAssetMap = {};
+let referInstrumentsMap = {};
 const directory = "./mm-config";
-const accountArr = [
-    "dcs009",
-    "dcs010",
-    "dcs011",
-    "sma001",
-    "sma002",
-    "sma003",
-    "dcs012",
-    "dcs014",
-    "dcs015",
-];
+const accountArr = Object.keys(configs.keyIndexMap);
 
 const firstOrderMarginArr = [
     0.00005, 0.00005, 0.00005, 0.000075, 0.000075, 0.000075, 0.0004, 0.0004,
@@ -86,146 +83,130 @@ const breakEvenXArr = [
     0.003, 0.003, 0.003, 0.005, 0.005, 0.005, 0.01, 0.01, 0.01,
 ];
 
+let validInstIDs = [
+    "BTC-USDT-SWAP",
+    "ETH-USDT-SWAP",
+    "MATIC-USDT-SWAP",
+    "XRP-USDT-SWAP",
+    "SOL-USDT-SWAP",
+    "DOGE-USDT-SWAP",
+    "1INCH-USDT-SWAP",
+    "AAVE-USDT-SWAP",
+    "ACH-USDT-SWAP",
+    "ADA-USDT-SWAP",
+    "ARB-USDT-SWAP",
+    "ATOM-USDT-SWAP",
+    "AVAX-USDT-SWAP",
+    "BNB-USDT-SWAP",
+    "CRV-USDT-SWAP",
+    "DOT-USDT-SWAP",
+    "DYDX-USDT-SWAP",
+    "FTM-USDT-SWAP",
+    "LINK-USDT-SWAP",
+    "LTC-USDT-SWAP",
+    "OP-USDT-SWAP",
+    "UNI-USDT-SWAP",
+];
+
+const getOkxAssetsSet = async (instType) => {
+    const insts = await okxClient.getInstruments(instType);
+    let assetsSet = new Set();
+    for (let inst of insts) {
+        var asset;
+        if (instType == "SWAP") {
+            asset = inst.ctValCcy;
+            okxFuturesConfigMap[inst.instID] = inst;
+        } else {
+            asset = inst.baseCcy;
+        }
+        assetsSet.add(asset);
+    }
+    return assetsSet;
+};
+
+const getBinanceAssetsSet = async (instType) => {
+    var result;
+    let assetSet = new Set();
+    if (instType == "FUTURES") {
+        // 获取binance支持的futures
+        result = await binanceClient.futuresInstruments();
+    } else if (instType == "SPOT") {
+        result = await binanceClient.spotInstruments();
+    }
+
+    for (let item of result) {
+        assetSet.add(item.baseAsset);
+    }
+    return assetSet;
+};
+
+const formatBinanceFuturesAssets = (bnFuturesAssets) => {
+    let assetSet = new Set();
+    for (let asset of bnFuturesAssets) {
+        const formattedAsset = asset.replace("1000", "");
+        bnFuturesAssetMap[formattedAsset] = asset;
+        assetSet.add(formattedAsset);
+    }
+    return assetSet;
+};
+
 const main = async () => {
     try {
         deleteFilesInDirectory(directory);
 
         // 获取okx 支持的futures
-        const result = await client.getInstruments("SWAP");
-        let okxFuturesMap = {};
-        let okxFuturesAsset = new Set();
-        if (result != null && result.length > 0) {
-            for (let item of result) {
-                if (item.state != "live" || item.settleCcy != "USDT") {
-                    continue;
-                }
-                okxFuturesAsset.add(item.ctValCcy);
-                okxFuturesMap[item.instId] = {
-                    symbol: item.instId,
-                    ctMult: item.ctMult,
-                    ctVal: item.ctVal,
-                    level: item.lever,
-                    lotSz: item.lotSz, // 下单数量精度, 对于合约就是张数
-                    minSz: item.minSz,
-                    tickSz: item.tickSz,
-                    maxLmtAmt: item.maxLmtAmt,
-                };
-            }
-        }
+        const okxFuturesAssets = await getOkxAssetsSet("SWAP");
 
         // 获取okx 支持的spot
-        const okxSpotResult = await client.getInstruments("SPOT");
-        let okxSpotAsset = new Set();
-        if (okxSpotResult != null && okxSpotResult.length > 0) {
-            for (let symbol of okxSpotResult) {
-                if (symbol.state != "live" || symbol.quoteCcy != "USDT") {
-                    continue;
-                }
-                okxSpotAsset.add(symbol.baseCcy);
-            }
-        }
+        const okxSpotAssets = await getOkxAssetsSet("SPOT");
 
         // 获取binance支持的futures
-        const fResult = await binance.futuresExchangeInfo();
-        let bnFuturesBaseAsset = new Set();
-        for (let symbol of fResult.symbols) {
-            if (
-                symbol.contractType != "PERPETUAL" ||
-                symbol.quoteAsset != "USDT" ||
-                [
-                    "USDC",
-                    "BUSD",
-                    "DAI",
-                    "SRM",
-                    "HNT",
-                    "TOMO",
-                    "CVC",
-                    "BTS",
-                    "SC",
-                    "RAY",
-                    "FTT",
-                    "COCOS",
-                    "STRAX",
-                ].includes(symbol.baseAsset)
-            ) {
-                continue;
-            }
-            bnFuturesBaseAsset.add(symbol.baseAsset);
-        }
+        let bnFuturesAssets = await getBinanceAssetsSet("FUTURES");
+        bnFuturesAssets = formatBinanceFuturesAssets(bnFuturesAssets);
 
-        // 获取binance智齿的spot
-        const sResult = await binance.exchangeInfo();
-        let bnSpotBaseAsset = new Set();
-        for (let symbol of sResult.symbols) {
-            if (
-                symbol.quoteAsset != "USDT" ||
-                [
-                    "USDC",
-                    "BUSD",
-                    "DAI",
-                    "SRM",
-                    "HNT",
-                    "TOMO",
-                    "CVC",
-                    "BTS",
-                    "SC",
-                    "RAY",
-                    "FTT",
-                    "COCOS",
-                    "STRAX",
-                ].includes(symbol.baseAsset)
-            ) {
-                continue;
-            }
-            bnSpotBaseAsset.add(symbol.baseAsset);
-        }
+        // 获取binance支持的spot
+        const bnSpotAssets = await getBinanceAssetsSet("SPOT");
 
-        // 取交集
-        // 计算交集
-        let intersection = [...okxFuturesAsset].filter(
-            (x) =>
-                okxSpotAsset.has(x) &&
-                bnFuturesBaseAsset.has(x) &&
-                bnSpotBaseAsset.has(x)
-        );
-        let validInstId = [
-            "BTC-USDT-SWAP",
-            "ETH-USDT-SWAP",
-            "MATIC-USDT-SWAP",
-            "XRP-USDT-SWAP",
-            "SOL-USDT-SWAP",
-            "DOGE-USDT-SWAP",
-            "1INCH-USDT-SWAP",
-            "AAVE-USDT-SWAP",
-            "ACH-USDT-SWAP",
-            "ADA-USDT-SWAP",
-            "ARB-USDT-SWAP",
-            "ATOM-USDT-SWAP",
-            "AVAX-USDT-SWAP",
-            "BNB-USDT-SWAP",
-            "CRV-USDT-SWAP",
-            "DOT-USDT-SWAP",
-            "DYDX-USDT-SWAP",
-            "FTM-USDT-SWAP",
-            "LINK-USDT-SWAP",
-            "LTC-USDT-SWAP",
-            "OP-USDT-SWAP",
-            "UNI-USDT-SWAP",
-        ];
+        // 以okx为主，生成配置信息
+        for (let asset of okxFuturesAssets) {
+            let referInstruments = [];
+            if (okxSpotAssets.has(asset)) {
+                referInstruments.push({
+                    exchange: "Okx",
+                    instType: "SPOT",
+                    instID: `${asset}-USDT`,
+                });
+            }
+            if (bnFuturesAssets.has(asset)) {
+                referInstruments.push({
+                    exchange: "Binance",
+                    instType: "FUTURES",
+                    instID: `${bnFuturesAssetMap[asset]}USDT`,
+                });
+            }
+            if (bnSpotAssets.has(asset)) {
+                referInstruments.push({
+                    exchange: "Binance",
+                    instType: "SPOT",
+                    instID: `${asset}USDT`,
+                });
+            }
+            referInstrumentsMap[`${asset}-USDT-SWAP`] = referInstruments;
+        }
 
         for (let i = 0; i < accountArr.length; i++) {
             let configs = {};
-            for (let j = 0; j < intersection.length; j++) {
-                let symbol = intersection[j];
-                let instId = `${symbol}-USDT-SWAP`;
-                if (!validInstId.includes(instId)) {
-                    continue;
+            okxFuturesAssets.forEach((asset) => {
+                let instID = `${asset}-USDT-SWAP`;
+                if (!validInstIDs.includes(instID)) {
+                    return;
                 }
-                let instCfg = okxFuturesMap[instId];
-                configs[instId] = {
+                let instCfg = okxFuturesConfigMap[instID];
+                configs[instID] = {
+                    ReferInstruments: referInstrumentsMap[instID],
                     ContractNum: 1,
                     VolPerCont: parseFloat(instCfg.ctVal),
-                    BaseAsset: symbol,
+                    BaseAsset: asset,
                     Leverage: 10,
                     EffectiveNum: 1,
                     Precision: [getDecimals(instCfg.tickSz), 0],
@@ -239,15 +220,15 @@ const main = async () => {
                     VolatilityE: 0.75,
                     VolatilityD: volatilityDArr[i],
                     VolatilityG: volatilityGArr[i],
-                    TickerShiftStartNum: ["BTC", "ETH"].includes(symbol)
+                    TickerShiftStartNum: ["BTC", "ETH"].includes(asset)
                         ? minimumTickershiftMap["CORE"]
                         : minimumTickershiftMap["OTHER"],
-                    MaxContractNum: ["BTC", "ETH"].includes(symbol)
+                    MaxContractNum: ["BTC", "ETH"].includes(asset)
                         ? maxPositionMap["CORE"]
                         : maxPositionMap["OTHER"],
                     BreakEvenX: breakEvenXArr[i],
                 };
-            }
+            });
             const formattedJSON = JSON.stringify(configs, null, 4);
             const filePath = path.join(directory, `${accountArr[i]}.json`);
             writeStringToFile(filePath, formattedJSON);

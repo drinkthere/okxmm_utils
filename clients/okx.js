@@ -283,7 +283,7 @@ class OkxClient {
     async getMargin() {
         try {
             const result = await this.client.getBalance();
-            console.log(result);
+            return result;
         } catch (e) {
             console.error("getMargin", e);
         }
@@ -724,9 +724,9 @@ class OkxClient {
         return ret;
     }
 
-    async getFuturesSymbols() {
+    async getInstruments(instType) {
         try {
-            const result = await this.client.getInstruments("SWAP");
+            const result = await this.client.getInstruments(instType);
             if (result != null && result.length > 0) {
                 return result
                     .filter(
@@ -736,7 +736,9 @@ class OkxClient {
                     )
                     .map((item) => {
                         return {
-                            symbol: item.instId,
+                            instID: item.instId,
+                            baseCcy: item.baseCcy,
+                            ctValCcy: item.ctValCcy,
                             ctMult: item.ctMult,
                             ctVal: item.ctVal,
                             level: item.lever,
@@ -859,7 +861,6 @@ class OkxClient {
         const accountArr = await this.client.getAccountConfiguration();
         if (accountArr && accountArr.length > 0) {
             const account = accountArr[0];
-            console.log(account.acctLv);
             if (account.acctLv == 1) {
                 return "Simple mode";
             } else if (account.acctLv == 2) {
