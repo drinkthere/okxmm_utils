@@ -15,7 +15,7 @@ const configs = require(cfgFile);
 
 const { account } = require("minimist")(process.argv.slice(2));
 if (account == null) {
-    log("node stat.js --account=xxx");
+    log("node close.js --account=xxx");
     process.exit();
 }
 

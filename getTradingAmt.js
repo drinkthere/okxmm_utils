@@ -1,21 +1,32 @@
-const { RestClient, WebsocketClient } = require("okx-api");
-const { v4: uuidv4 } = require("uuid");
-const { scheduleLoopTask, sleep, fileExists } = require("./utils/run");
+const OkxClient = require("./clients/okx");
+const { sleep, fileExists } = require("./utils/run");
+const cfgFile = `./configs/config.json`;
+if (!fileExists(cfgFile)) {
+    log(`config file ${cfgFile} does not exits`);
+    process.exit();
+}
+const configs = require(cfgFile);
+
+const { account } = require("minimist")(process.argv.slice(2));
+if (account == null) {
+    log("node getAccount.js --account=xxx");
+    process.exit();
+}
+
+const keyIndex = configs.keyIndexMap[account];
 // 加载.env文件
 const dotenv = require("dotenv");
 dotenv.config();
-const apiKeyArr = process.env.OKX_API_KEY.split(",");
-const apiSecretArr = process.env.OKX_API_SECRET.split(",");
-const apiPasswordArr = process.env.OKX_API_PASSWORD.split(",");
-const keyIndex = process.env.KEY_INDEX;
-client = new RestClient(
-    {
-        apiKey: apiKeyArr[keyIndex],
-        apiSecret: apiSecretArr[keyIndex],
-        apiPass: apiPasswordArr[keyIndex],
-    },
-    "prod"
-);
+const apiKeyArr = process.env.OKX_STAT_API_KEY.split(",");
+const apiSecretArr = process.env.OKX_STAT_API_SECRET.split(",");
+const apiPasswordArr = process.env.OKX_STAT_API_PASSWORD.split(",");
+
+let options = {
+    API_KEY: apiKeyArr[keyIndex],
+    API_SECRET: apiSecretArr[keyIndex],
+    API_PASSWORD: apiPasswordArr[keyIndex],
+};
+const exchangeClient = new OkxClient(options);
 
 const loadSymbolToCtValMap = async () => {
     let symbols = [];
@@ -100,11 +111,23 @@ const getTradingAmt = async (symbolToCtValMap, begin, end, symbol = "") => {
 
 const main = async () => {
     try {
-        const symbolToCtValMap = await loadSymbolToCtValMap();
+        const instruments = await exchangeClient.getInstruments("SWAP");
+        let symbolToCtValMap = {};
+        if (instruments.length > 0) {
+            for (let instInfo of instruments) {
+                symbolToCtValMap[instInfo.instID] = parseFloat(instInfo.ctVal);
+            }
+        }
+
         const end = new Date().getTime();
         const start = new Date(end - 24 * 60 * 60 * 1000).getTime();
 
-        const result = await getTradingAmt(symbolToCtValMap, start, end, "");
+        const result = await exchangeClient.getTradingAmount(
+            symbolToCtValMap,
+            start,
+            end,
+            ""
+        );
         console.log(result);
     } catch (e) {
         console.error(e);
