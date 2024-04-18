@@ -15,12 +15,10 @@ const configs = require(cfgFile);
 
 const OkxClient = require("./clients/okx");
 const BinanceClient = require("./clients/binance");
-const StatOrderService = require("./services/statOrder");
 const keyIndex = 0;
 
 // 加载.env文件
 const dotenv = require("dotenv");
-const { Console } = require("console");
 dotenv.config();
 const apiKeyArr = process.env.OKX_STAT_API_KEY.split(",");
 const apiSecretArr = process.env.OKX_STAT_API_SECRET.split(",");
@@ -43,21 +41,21 @@ const directory = "./mm-config";
 const accountArr = Object.keys(configs.keyIndexMap);
 
 const firstOrderMarginArr = [
-    0.00005, 0.00005, 0.00005, 0.000075, 0.000075, 0.000075, 0.0004, 0.0004,
+    0.00005, 0.00005, 0.00005, 0.00006, 0.00007, 0.00008, 0.0004, 0.0004,
     0.0004,
 ];
 
 const firstOrderRangePercentArr = [
-    0.00005, 0.00005, 0.00005, 0.00005, 0.00005, 0.00005, 0.0002, 0.0002,
+    0.00005, 0.00005, 0.00005, 0.00006, 0.00007, 0.00008, 0.0002, 0.0002,
     0.0002,
 ];
 
 const gapSizePercentArr = [
-    0.00025, 0.00025, 0.00025, 0.0004, 0.0004, 0.0004, 0.0015, 0.0015, 0.0015,
+    0.00025, 0.00025, 0.00025, 0.0003, 0.00035, 0.0004, 0.0015, 0.0015, 0.0015,
 ];
 
 const forgivePercentArr = [
-    1, 1, 0.99995, 0.9999, 0.99985, 0.9998, 0.9995, 0.99925, 0.999,
+    1, 1, 0.99995, 0.99995, 0.99995, 0.99995, 0.9995, 0.99925, 0.999,
 ];
 
 const tickerShiftArr = [
@@ -65,7 +63,7 @@ const tickerShiftArr = [
     0.000005, 0.000005,
 ];
 
-const volatilityDArr = [3, 2, 2, 2, 2, 2, 1.8, 1.6, 1.4];
+const volatilityDArr = [3, 2, 2, 3, 3.5, 4, 1.8, 1.6, 1.4];
 
 const volatilityGArr = [60, 120, 240, 240, 240, 240, 300, 360, 420];
 
@@ -76,11 +74,11 @@ const minimumTickershiftMap = {
 
 const maxPositionMap = {
     CORE: 500,
-    OTHER: 250,
+    OTHER: 500,
 };
 
 const breakEvenXArr = [
-    0.003, 0.003, 0.003, 0.005, 0.005, 0.005, 0.01, 0.01, 0.01,
+    0.003, 0.003, 0.003, 0.003, 0.003, 0.003, 0.01, 0.01, 0.01,
 ];
 
 let validInstIDs = [
@@ -203,7 +201,7 @@ const main = async () => {
                 }
                 let instCfg = okxFuturesConfigMap[instID];
                 configs[instID] = {
-                    ReferInstruments: referInstrumentsMap[instID],
+                    // ReferInstruments: referInstrumentsMap[instID],
                     ContractNum: 1,
                     VolPerCont: parseFloat(instCfg.ctVal),
                     BaseAsset: asset,
