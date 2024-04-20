@@ -42,35 +42,42 @@ const accountArr = Object.keys(configs.keyIndexMap);
 
 const firstOrderMarginArr = [
     0.00005, 0.00005, 0.00005, 0.00006, 0.00007, 0.00008, 0.0004, 0.0004,
-    0.0004,
+    0.0004, 0.00005, 0.00005, 0.00005, 0.00005, 0.00005,
 ];
 
 const firstOrderRangePercentArr = [
     0.00005, 0.00005, 0.00005, 0.00006, 0.00007, 0.00008, 0.0002, 0.0002,
-    0.0002,
+    0.0002, 0.00005, 0.00005, 0.00005, 0.00005, 0.00005,
 ];
 
 const gapSizePercentArr = [
     0.00025, 0.00025, 0.00025, 0.0003, 0.00035, 0.0004, 0.0015, 0.0015, 0.0015,
+    0.00025, 0.00025, 0.00025, 0.00025, 0.00025,
 ];
 
 const forgivePercentArr = [
-    1, 1, 0.99995, 0.99995, 0.99995, 0.99995, 0.9995, 0.99925, 0.999,
+    1, 1, 0.99995, 0.99995, 0.99995, 0.99995, 0.9995, 0.99925, 0.999, 1, 1,
+    0.99995, 1, 1,
 ];
 
 const tickerShiftArr = [
     0.0000025, 0.0000025, 0.0000025, 0.0000025, 0.0000025, 0.0000025, 0.000005,
-    0.000005, 0.000005,
+    0.000005, 0.000005, 0.0000025, 0.0000025, 0.0000025, 0.0000025, 0.0000025,
 ];
 
-const volatilityDArr = [3, 2, 2, 3, 3.5, 4, 1.8, 1.6, 1.4];
+const volatilityDArr = [3, 2, 2, 3, 3.5, 4, 1.8, 1.6, 1.4, 3, 2, 2, 3, 2];
 
-const volatilityGArr = [60, 120, 240, 240, 240, 240, 300, 360, 420];
+const volatilityGArr = [
+    60, 120, 240, 240, 240, 240, 300, 360, 420, 120, 180, 240, 120, 240,
+];
 
-const minimumTickershiftMap = {
-    CORE: 100,
-    OTHER: 50,
-};
+const minimumTickershiftArr = [
+    100, 100, 100, 50, 50, 50, 50, 50, 50, 100, 75, 50, 100, 50,
+];
+
+const maxPositionArr = [
+    500, 500, 500, 500, 500, 500, 250, 250, 250, 500, 500, 500, 500, 500,
+];
 
 const maxPositionMap = {
     CORE: 500,
@@ -78,7 +85,8 @@ const maxPositionMap = {
 };
 
 const breakEvenXArr = [
-    0.003, 0.003, 0.003, 0.003, 0.003, 0.003, 0.01, 0.01, 0.01,
+    0.003, 0.003, 0.003, 0.003, 0.003, 0.003, 0.01, 0.01, 0.01, 0.003, 0.003,
+    0.003, 0.003, 0.003,
 ];
 
 let validInstIDs = [
@@ -218,12 +226,8 @@ const main = async () => {
                     VolatilityE: 0.75,
                     VolatilityD: volatilityDArr[i],
                     VolatilityG: volatilityGArr[i],
-                    TickerShiftStartNum: ["BTC", "ETH"].includes(asset)
-                        ? minimumTickershiftMap["CORE"]
-                        : minimumTickershiftMap["OTHER"],
-                    MaxContractNum: ["BTC", "ETH"].includes(asset)
-                        ? maxPositionMap["CORE"]
-                        : maxPositionMap["OTHER"],
+                    TickerShiftStartNum: minimumTickershiftArr[i],
+                    MaxContractNum: maxPositionArr[i],
                     BreakEvenX: breakEvenXArr[i],
                 };
             });
