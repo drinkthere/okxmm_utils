@@ -38,6 +38,9 @@ const lock = new AsyncLock();
 // 初始化stat order service
 const statOrderService = new StatOrderService();
 
+let noOrders = 0;
+let maxNoOrdersTime = 5;
+
 let volContractMap = {};
 const loadVolContractInfo = async () => {
     let insts = await exchangeClient.getInstruments("SWAP");
@@ -151,13 +154,26 @@ const scheduleStatProfit = () => {
             let buyOrdersNum = 0;
             let sellOrdersNum = 0;
             const orders = await exchangeClient.getFuturesOpenOrderList();
-            for (let order of orders) {
-                if (order.side == "BUY") {
-                    buyOrdersNum++;
-                } else {
-                    sellOrdersNum++;
+            if (orders || orders.length > 0) {
+                for (let order of orders) {
+                    if (order.side == "BUY") {
+                        buyOrdersNum++;
+                    } else {
+                        sellOrdersNum++;
+                    }
+                }
+                noOrders = 0;
+                maxNoOrdersTime = 5;
+            } else {
+                noOrders++;
+                if (noOrders >= maxNoOrdersTime) {
+                    // 报警
+
+                    noOrders = 0;
+                    maxNoOrdersTime = 2 * maxNoOrdersTime;
                 }
             }
+
             const ordersNum = buyOrdersNum + sellOrdersNum;
             console.log(
                 `The num of open orders is ${ordersNum}(B:${buyOrdersNum}|S:${sellOrdersNum})`
