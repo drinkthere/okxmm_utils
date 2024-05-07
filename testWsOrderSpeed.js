@@ -30,7 +30,8 @@ let options = {
     API_KEY: apiKeyArr[keyIndex],
     API_SECRET: apiSecretArr[keyIndex],
     API_PASSWORD: apiPasswordArr[keyIndex],
-    market,
+    market: configs.market,
+    localAddress: configs.okxLocalAddress[account],
 };
 const exchangeClient = new OkxClient(options);
 

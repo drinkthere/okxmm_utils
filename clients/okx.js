@@ -3,6 +3,7 @@ const { v4: uuidv4 } = require("uuid");
 const http = require("https");
 const https = require("https");
 const { sleep, convertScientificToString } = require("../utils/run");
+const { Console } = require("console");
 
 class OkxClient {
     constructor(options = {}) {
@@ -808,10 +809,11 @@ class OkxClient {
     async getTradingAmount(symbolToCtValMap, begin, end, symbol = null) {
         let totalTradingAmt = 0; // 总交易量
         let hasMoreData = true; // 是否还有更多数据
-        let after = null; // 请求参数：请求此ID之前（更旧的数据）的分页内容
+        let before = null; // 请求参数：请求此ID之前（更旧的数据）的分页内容
         let limit = 100; // 每页数量，默认为 100
-
+        
         try {
+            let i = 0;
             // 循环获取订单历史记录
             while (hasMoreData) {
                 let param = {
@@ -820,27 +822,27 @@ class OkxClient {
                     end,
                     limit,
                 };
-                if (after != null) {
-                    param["after"] = after;
+                if (before != null) {
+                    param["before"] = before;
                 }
                 if (symbol != null) {
                     param["instId"] = symbol;
                 }
 
                 const filledOrders = await this.client.getFillsHistory(param);
-
                 if (filledOrders.length > 0) {
                     // 遍历订单记录并计算交易量
                     filledOrders.forEach((order) => {
+                        // console.log(order.ordId, order.fillTime)
                         totalTradingAmt +=
                             parseFloat(order.fillSz) *
                             parseFloat(order.fillPx) *
                             parseFloat(symbolToCtValMap[order.instId]);
                     });
-
+                   
                     // 如果有更多数据，则更新请求参数
                     if (filledOrders.length === limit) {
-                        after = filledOrders[filledOrders.length - 1].ordId; // 设置 after 参数为当前页最后一个订单的 ordId
+                        before = filledOrders[filledOrders.length - 1].ordId; // 设置 after 参数为当前页最后一个订单的 ordId
                     } else {
                         hasMoreData = false; // 没有更多数据了，结束循环
                     }
@@ -851,7 +853,7 @@ class OkxClient {
                     );
                     break;
                 }
-                await sleep(500);
+                await sleep(100);
             }
             return totalTradingAmt;
         } catch (e) {
