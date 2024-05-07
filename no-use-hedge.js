@@ -2,7 +2,7 @@ const AsyncLock = require("async-lock");
 const { v4: uuidv4 } = require("uuid");
 const { scheduleLoopTask, sleep, fileExists } = require("./utils/run");
 const { log } = require("./utils/log");
-const { RestClient, WebsocketClient, DefaultLogger } = require("okx-api");
+const { RestClient, WebsocketClient, DefaultLogger } = require("./okx-api");
 
 // 加载.env文件
 const dotenv = require("dotenv");

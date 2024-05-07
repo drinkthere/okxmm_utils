@@ -1,15 +1,8 @@
-const { RestClient, WebsocketClient } = require("okx-api");
+const { RestClient, WebsocketClient } = require("../okx-api");
 const { v4: uuidv4 } = require("uuid");
 const http = require("https");
 const https = require("https");
 const { sleep, convertScientificToString } = require("../utils/run");
-
-// 加载.env文件
-const dotenv = require("dotenv");
-dotenv.config();
-const apiKeyArr = process.env.OKX_API_KEY.split(",");
-const apiSecretArr = process.env.OKX_API_SECRET.split(",");
-const apiPasswordArr = process.env.OKX_API_PASSWORD.split(",");
 
 class OkxClient {
     constructor(options = {}) {
@@ -24,6 +17,9 @@ class OkxClient {
             // silly: (...params) => console.log('silly', ...params),
         };
 
+        const market = options.hasOwnProperty("market")
+            ? options["market"]
+            : "prod";
         if (options.hasOwnProperty("localAddress")) {
             const localAddress = options["localAddress"];
             const httpAgent = new http.Agent({ localAddress });
@@ -34,7 +30,7 @@ class OkxClient {
                     apiSecret: options.API_SECRET,
                     apiPass: options.API_PASSWORD,
                 },
-                "prod",
+                market,
                 {},
                 { httpAgent, httpsAgent }
             );
@@ -48,16 +44,20 @@ class OkxClient {
                             apiPass: options.API_PASSWORD,
                         },
                     ],
+                    market: market,
                     requestOptions: { localAddress },
                 },
                 logger
             );
         } else {
-            this.client = new RestClient({
-                apiKey: options.API_KEY,
-                apiSecret: options.API_SECRET,
-                apiPass: options.API_PASSWORD,
-            });
+            this.client = new RestClient(
+                {
+                    apiKey: options.API_KEY,
+                    apiSecret: options.API_SECRET,
+                    apiPass: options.API_PASSWORD,
+                },
+                market
+            );
 
             this.wsClient = new WebsocketClient(
                 {
@@ -68,6 +68,7 @@ class OkxClient {
                             apiPass: options.API_PASSWORD,
                         },
                     ],
+                    market: market,
                 },
                 logger
             );
@@ -103,8 +104,9 @@ class OkxClient {
                     case "tickers":
                         handler = handlers["tickers"];
                         if (handler != null) {
-                            const stdTickers = this._formatTickers(event.data);
-                            handler(stdTickers);
+                            // const stdTickers = this._formatTickers(event.data);
+                            // handler(stdTickers);
+                            handler(event);
                         }
                         break;
                     case "account":
@@ -332,7 +334,7 @@ class OkxClient {
                 },
             ],
         };
-        this.wsClient.sendMsg("orders", request);
+        this.wsClient.placeOrder(request);
     }
 
     async placeFuturesOrder(side, symbol, quantity, price, params) {
@@ -556,6 +558,20 @@ class OkxClient {
         } catch (e) {
             console.error("batchModifyFuturesOrders", orderList, e);
         }
+    }
+
+    async wsCancelFuturesOrder(symbol, clientOrderId) {
+        const request = {
+            id: clientOrderId,
+            op: "cancel-order",
+            args: [
+                {
+                    instId: symbol,
+                    clOrdId: clientOrderId,
+                },
+            ],
+        };
+        this.wsClient.cancelOrder(request);
     }
 
     async cancelFuturesOrder(symbol, clientOrderId) {
