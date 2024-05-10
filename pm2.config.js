@@ -8,6 +8,20 @@ module.exports = {
             error_file: "logs/hedge-error.log",
         },
         {
+            name: "stat_dcs004",
+            script: "stat.js",
+            args: "--account dcs004",
+            out_file: "logs/stat-dcs004-out.log",
+            error_file: "logs/stat-dcs004-out.log",
+        },
+        {
+            name: "stat_dcs005",
+            script: "stat.js",
+            args: "--account dcs005",
+            out_file: "logs/stat-dcs005-out.log",
+            error_file: "logs/stat-dcs005-out.log",
+        },
+        {
             name: "stat_dcs009",
             script: "stat.js",
             args: "--account dcs009",
@@ -55,6 +69,13 @@ module.exports = {
             args: "--account dcs012",
             out_file: "logs/stat-dcs012-out.log",
             error_file: "logs/stat-dcs012-out.log",
+        },
+        {
+            name: "stat_dcs013",
+            script: "stat.js",
+            args: "--account dcs013",
+            out_file: "logs/stat-dcs013-out.log",
+            error_file: "logs/stat-dcs013-out.log",
         },
         {
             name: "stat_dcs014",

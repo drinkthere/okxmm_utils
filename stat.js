@@ -3,7 +3,7 @@ const { scheduleLoopTask, sleep, fileExists } = require("./utils/run");
 const { log } = require("./utils/log");
 const OkxClient = require("./clients/okx");
 const StatOrderService = require("./services/statOrder");
-
+const TgService = require("./services/tg.js");
 const cfgFile = `./configs/config.json`;
 if (!fileExists(cfgFile)) {
     log(`config file ${cfgFile} does not exits`);
@@ -39,7 +39,7 @@ const lock = new AsyncLock();
 
 // 初始化stat order service
 const statOrderService = new StatOrderService();
-
+const tgService = new TgService();
 let noOrders = 0;
 let maxNoOrdersTime = 5;
 
@@ -156,7 +156,7 @@ const scheduleStatProfit = () => {
             let buyOrdersNum = 0;
             let sellOrdersNum = 0;
             const orders = await exchangeClient.getFuturesOpenOrderList();
-            if (orders || orders.length > 0) {
+            if (orders && orders.length > 5) {
                 for (let order of orders) {
                     if (order.side == "BUY") {
                         buyOrdersNum++;
@@ -170,7 +170,7 @@ const scheduleStatProfit = () => {
                 noOrders++;
                 if (noOrders >= maxNoOrdersTime) {
                     // 报警
-
+                    tgService.sendMsg(`${account} orders numbers warning`);
                     noOrders = 0;
                     maxNoOrdersTime = 2 * maxNoOrdersTime;
                 }
