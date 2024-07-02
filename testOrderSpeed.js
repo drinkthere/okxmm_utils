@@ -18,7 +18,13 @@ if (account == null) {
     process.exit();
 }
 market = market == null ? "prod" : market;
+// let localAddress = null
+// if (market != 'prod') {
+//     localAddress = configs.okxLocalAddress[account]
+// }
+
 const keyIndex = configs.keyIndexMap[account];
+
 // 加载.env文件
 const dotenv = require("dotenv");
 dotenv.config();
@@ -30,8 +36,8 @@ let options = {
     API_KEY: apiKeyArr[keyIndex],
     API_SECRET: apiSecretArr[keyIndex],
     API_PASSWORD: apiPasswordArr[keyIndex],
-    market: configs.market,
-    localAddress: configs.okxLocalAddress[account],
+    market: market,
+    localAddress: (localAddress = configs.okxLocalAddress[account]),
 };
 const exchangeClient = new OkxClient(options);
 
@@ -72,7 +78,7 @@ const main = async () => {
             "BUY",
             symbol,
             1,
-            0.64,
+            0.54,
             {
                 newClientOrderId: clientOrderId,
             }
@@ -85,6 +91,7 @@ const main = async () => {
         await exchangeClient.cancelFuturesOrder(symbol, clientOrderId);
         console.log(`${clientOrderId} CANCELSUBMITTED ${Date.now()}`);
         await sleep(1000);
+        process.exit();
     });
 };
 main();

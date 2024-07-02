@@ -1,7 +1,8 @@
 const fs = require("fs");
+const logFile = "private.log";
 {
     // 读取public.log文件内容
-    const data = fs.readFileSync("private.log", "utf-8").trim().split("\n");
+    const data = fs.readFileSync(logFile, "utf-8").trim().split("\n");
 
     // 将文件内容解析为行数据
     const lines = data.map((line) => line.split(" "));
@@ -55,7 +56,7 @@ const fs = require("fs");
 }
 {
     // 读取public.log文件内容
-    const data = fs.readFileSync("private.log", "utf-8").trim().split("\n");
+    const data = fs.readFileSync(logFile, "utf-8").trim().split("\n");
 
     // 将文件内容解析为行数据
     const lines = data.map((line) => line.split(" "));
@@ -110,5 +111,5 @@ const fs = require("fs");
             i++;
         }
     }
-    console.log(`public  avgSubmitted=${sumCanceled / i}`);
+    console.log(`public  avgCancel=${sumCanceled / i}`);
 }

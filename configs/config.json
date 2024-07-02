@@ -1,5 +1,4 @@
 {
-    "market": "colo",
     "hedgeParams": {
         "BTC-USDT-SWAP": {
             "threshold": 5,
@@ -31,7 +30,10 @@
         "sma012": 13,
         "sma013": 14,
         "dcs004": 15,
-        "dcs005": 16
+        "dcs005": 16,
+        "dcs008": 17,
+        "daphne1": 18,
+        "daphne1-ro": 19
     },
     "okxLocalAddress": {
         "dcs009": "192.168.14.34",
@@ -50,6 +52,29 @@
         "sma012": "192.168.14.38",
         "sma013": "192.168.14.38",
         "dcs004": "192.168.14.38",
-        "dcs005": "192.168.14.41"
+        "dcs005": "192.168.14.41",
+        "dcs008": "192.168.14.41",
+        "daphne1": "8.218.155.239"
+    },
+    "market": {
+        "dcs009": "colo",
+        "dcs010": "colo",
+        "dcs011": "colo",
+        "sma001": "colo",
+        "sma002": "colo",
+        "sma003": "colo",
+        "dcs012": "colo",
+        "dcs013": "colo",
+        "dcs014": "colo",
+        "dcs015": "colo",
+        "sma009": "colo",
+        "sma010": "colo",
+        "sma011": "colo",
+        "sma012": "colo",
+        "sma013": "colo",
+        "dcs004": "colo",
+        "dcs005": "colo",
+        "dcs008": "colo",
+        "daphne1": ""
     }
 }

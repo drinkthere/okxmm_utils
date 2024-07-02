@@ -21,10 +21,14 @@ class OkxClient {
         const market = options.hasOwnProperty("market")
             ? options["market"]
             : "prod";
+
         if (options.hasOwnProperty("localAddress")) {
             const localAddress = options["localAddress"];
-            const httpAgent = new http.Agent({ localAddress });
-            const httpsAgent = new https.Agent({ localAddress });
+            const httpAgent = new http.Agent({ localAddress, timeout: 30000 });
+            const httpsAgent = new https.Agent({
+                localAddress,
+                timeout: 30000,
+            });
             this.client = new RestClient(
                 {
                     apiKey: options.API_KEY,
@@ -159,7 +163,7 @@ class OkxClient {
                 clientOrderId: o.clOrdId,
                 side: o.side.toUpperCase(),
                 price: parseFloat(o.px),
-                lastFilledPrice: parseFloat(o.lastPx),
+                lastFilledPrice: parseFloat(o.fillPx),
                 orderStatus: this._formatOrderStatus(state),
                 executionType: executionType, // 用这个来标识是否是修改订单
                 originalPrice: parseFloat(o.px),
@@ -232,6 +236,85 @@ class OkxClient {
         }
 
         return this._formatOrders(allOrders);
+    }
+
+    async getFuturesFilledOrders(instId, begin, end) {
+        let allOrders = [];
+        let hasMoreData = true; // 是否还有更多数据
+        let before = null; // 请求参数：请求此ID之前（更旧的数据）的分页内容
+        let limit = 100; // 每页数量，默认为 100
+
+        try {
+            let i = 0;
+            // 循环获取订单历史记录
+            while (hasMoreData) {
+                let param = {
+                    instType: "SWAP",
+                    begin,
+                    end,
+                    limit,
+                };
+                if (before != null) {
+                    param["before"] = before;
+                }
+                if (instId != null) {
+                    param["instId"] = instId;
+                }
+
+                const filledOrders = await this.client.getFills(param);
+
+                // 如果有更多数据，则更新请求参数
+                if (filledOrders.length === limit) {
+                    before = filledOrders[filledOrders.length - 1].ordId; // 设置 after 参数为当前页最后一个订单的 ordId
+                } else {
+                    hasMoreData = false; // 没有更多数据了，结束循环
+                }
+
+                if (filledOrders.length > 0) {
+                    // 将这一页的订单添加到总订单列表中
+                    allOrders = allOrders.concat(filledOrders);
+                } else {
+                    console.error("Error fetching filled order", filledOrders);
+                    break;
+                }
+                await sleep(100);
+            }
+            return allOrders;
+        } catch (e) {
+            console.error("getTradingAmount", e);
+            return 0;
+        }
+
+        let afterOrderId = "";
+        try {
+            while (true) {
+                const pageOrders = await this.client.getFills({
+                    instType: "SWAP",
+                    instId,
+                    after: afterOrderId,
+                    limit: 100, // 每页最多100条
+                });
+
+                // 如果没有订单了，退出循环
+                if (pageOrders.length === 0) {
+                    break;
+                }
+
+                // 将这一页的订单添加到总订单列表中
+                allOrders = allOrders.concat(pageOrders);
+
+                // 获取最后一条订单的 orderId
+                afterOrderId = pageOrders[pageOrders.length - 1].ordId;
+            }
+        } catch (error) {
+            console.error("getFuturesOpenOrderList:", error);
+        }
+
+        if (allOrders == null || allOrders.length == 0) {
+            return [];
+        }
+
+        return allOrders;
     }
 
     // 设置symbol的杠杆
@@ -811,7 +894,7 @@ class OkxClient {
         let hasMoreData = true; // 是否还有更多数据
         let before = null; // 请求参数：请求此ID之前（更旧的数据）的分页内容
         let limit = 100; // 每页数量，默认为 100
-        
+
         try {
             let i = 0;
             // 循环获取订单历史记录
@@ -839,7 +922,7 @@ class OkxClient {
                             parseFloat(order.fillPx) *
                             parseFloat(symbolToCtValMap[order.instId]);
                     });
-                   
+
                     // 如果有更多数据，则更新请求参数
                     if (filledOrders.length === limit) {
                         before = filledOrders[filledOrders.length - 1].ordId; // 设置 after 参数为当前页最后一个订单的 ordId

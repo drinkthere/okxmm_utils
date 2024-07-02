@@ -70,7 +70,7 @@ const orderUpdateHandler = async (orders) => {
                 const price = order.lastFilledPrice;
                 const notional = price * amount;
 
-                const msg = `${account} ${symbol} ${side} ${order.orderStatus} ${amount}@${price}`;
+                const msg = `${account} ${clientOrderId} ${symbol} ${side} ${order.orderStatus} ${amount}@${price}`;
                 log(msg);
 
                 // 将订单写入数据库
