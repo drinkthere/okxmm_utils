@@ -1,5 +1,6 @@
 const OkxClient = require("./clients/okx");
 const { sleep, fileExists } = require("./utils/run");
+const { log } = require("./utils/log");
 const cfgFile = `./configs/config.json`;
 if (!fileExists(cfgFile)) {
     log(`config file ${cfgFile} does not exits`);
@@ -9,7 +10,7 @@ const configs = require(cfgFile);
 
 const { account } = require("minimist")(process.argv.slice(2));
 if (account == null) {
-    log("node getAccount.js --account=xxx");
+    log("node getAccountInfo.js --account=xxx");
     process.exit();
 }
 
@@ -69,6 +70,8 @@ const main = async () => {
                     console.log(bal.asset, bal.balance);
                 }
             }
+        } else {
+            console.log(`No balance`);
         }
         console.log();
 

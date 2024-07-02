@@ -133,5 +133,12 @@ module.exports = {
             out_file: "logs/stat-sma013-out.log",
             error_file: "logs/stat-sma013-out.log",
         },
+        {
+            name: "stat_daphne1",
+            script: "stat.js",
+            args: "--account daphne1",
+            out_file: "logs/stat-daphne1-out.log",
+            error_file: "logs/stat-daphne1-out.log",
+        },
     ],
 };
