@@ -50,7 +50,7 @@ class OkxClient {
                         },
                     ],
                     market: market,
-                    requestOptions: { localAddress },
+                    requestOptions: { agent: httpsAgent },
                 },
                 logger
             );

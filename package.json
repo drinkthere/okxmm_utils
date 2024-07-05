@@ -7,6 +7,8 @@
         "node-telegram-bot-api": "^0.65.1",
         "okx-api": "file:okx-api",
         "pm2": "^5.3.1",
-        "uuid": "^9.0.1"
+        "protobufjs": "^7.3.2",
+        "uuid": "^9.0.1",
+        "zeromq": "^5.3.1"
     }
 }

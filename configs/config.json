@@ -74,6 +74,6 @@
         "dcs004": "colo",
         "dcs005": "colo",
         "dcs008": "colo",
-        "daphne1": ""
+        "daphne1": "prod"
     }
 }
