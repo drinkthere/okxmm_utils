@@ -1,4 +1,5 @@
 const zmq = require("zeromq");
+const fs = require("fs");
 const protobuf = require("protobufjs");
 const { scheduleLoopTask, sleep } = require("./utils/run");
 const { log } = require("./utils/log");
@@ -8,9 +9,9 @@ const maxNotUpdateTime = 10000; // 10s
 const maxP99DelayTime = 45; // 35
 const ipcMap = {
     btcSpotIPC: "tcp://172.31.16.148:55555",
-    // "ethSpotIPC": "tcp://172.31.16.148:55556",
-    // "btcFuturesIPC": "tcp://172.31.16.148:55557",
-    // "ethFuturesIPC": "tcp://172.31.16.148:55558"
+    ethSpotIPC: "tcp://172.31.16.148:55556",
+    btcFuturesIPC: "tcp://172.31.16.148:55557",
+    ethFuturesIPC: "tcp://172.31.16.148:55558",
 };
 const pbRoot = protobuf.loadSync("./proto/ticker.proto");
 const marketData = pbRoot.lookupType("MarketData");
@@ -18,6 +19,8 @@ const marketData = pbRoot.lookupType("MarketData");
 let subscribeArr = [];
 let lastUpdateTime = {};
 let delayData = {}; // 存储每个通道的延迟数据
+const filePath = "/data/delay.csv";
+const fileStream = fs.createWriteStream(filePath, { flags: "a" });
 
 const init = () => {
     for (let key of Object.keys(ipcMap)) {
@@ -46,12 +49,29 @@ const messageHandler = (key, pbMsg) => {
     lastUpdateTime[key] = currentTimestamp;
 
     const delayMs = currentTimestamp - message.eventTs.toNumber();
-    delayData[key].push({ delayMs, timestamp: currentTimestamp });
+    if (["btcSpotIPC", "btcFuturesIPC"].includes(key)) {
+        const currentDate = new Date();
+        const formattedDate = currentDate
+            .toISOString()
+            .slice(0, 19)
+            .replace("T", " ");
 
-    const oneMinuteAgo = currentTimestamp - 60000;
-    delayData[key] = delayData[key].filter(
-        (item) => item.timestamp >= oneMinuteAgo
-    );
+        if (key == "btcSpotIPC") {
+            key = "BTCSPOT";
+        } else {
+            key = "BTCPERP";
+        }
+        const row = `${formattedDate},${key},${delayMs}`;
+
+        fileStream.write(row + "\n");
+    }
+
+    // delayData[key].push({ delayMs, timestamp: currentTimestamp });
+
+    // const oneMinuteAgo = currentTimestamp - 60000;
+    // delayData[key] = delayData[key].filter(
+    //     (item) => item.timestamp >= oneMinuteAgo
+    // );
 };
 
 const checkTimeouts = () => {
@@ -103,7 +123,7 @@ const main = async () => {
 
     // 每 1 秒检查一次超时和延迟
     checkTimeouts(); // 每10s计算一次延时
-    calculateP99Delay(); // 每分钟计算一次 P99 延迟
+    // calculateP99Delay(); // 每分钟计算一次 P99 延迟
 };
 main();
 
@@ -113,5 +133,6 @@ process.on("SIGINT", () => {
     for (let sub of subscribeArr) {
         sub.close();
     }
+    fileStream.end();
     process.exit(0);
 });

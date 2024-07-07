@@ -2,3 +2,4 @@
 node_modules
 logs/*
 mm-config/*
+.DS_Store
