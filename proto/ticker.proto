@@ -5,5 +5,5 @@ message MarketData {
   string bestAsk = 2;
   int64 eventTs = 3;
   string bidSz = 4;
-  string askSiz = 5;
+  string askSz = 5;
 }
