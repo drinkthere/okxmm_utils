@@ -156,7 +156,7 @@ const scheduleStatProfit = () => {
             let buyOrdersNum = 0;
             let sellOrdersNum = 0;
             const orders = await exchangeClient.getFuturesOpenOrderList();
-            if (orders && orders.length > 5) {
+            if (orders && orders.length > 1) {
                 for (let order of orders) {
                     if (order.side == "BUY") {
                         buyOrdersNum++;
@@ -169,10 +169,12 @@ const scheduleStatProfit = () => {
             } else {
                 noOrders++;
                 if (noOrders >= maxNoOrdersTime) {
-                    // 报警
-                    tgService.sendMsg(`${account} orders numbers warning`);
-                    noOrders = 0;
-                    maxNoOrdersTime = 2 * maxNoOrdersTime;
+                    if (account != "dcs008" && account != "sma004") {
+                        // 报警
+                        tgService.sendMsg(`${account} orders numbers warning`);
+                        noOrders = 0;
+                        maxNoOrdersTime = 2 * maxNoOrdersTime;
+                    }
                 }
             }
 

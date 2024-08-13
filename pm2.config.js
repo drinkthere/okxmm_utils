@@ -1,13 +1,6 @@
 module.exports = {
     apps: [
         {
-            name: "hedge",
-            script: "hedge.js",
-            args: "",
-            out_file: "logs/hedge-out.log",
-            error_file: "logs/hedge-error.log",
-        },
-        {
             name: "stat_dcs004",
             script: "stat.js",
             args: "--account dcs004",
@@ -69,6 +62,13 @@ module.exports = {
             args: "--account sma003",
             out_file: "logs/stat-sma003-out.log",
             error_file: "logs/stat-sma003-out.log",
+        },
+        {
+            name: "stat_sma004",
+            script: "stat.js",
+            args: "--account sma004",
+            out_file: "logs/stat-sma004-out.log",
+            error_file: "logs/stat-sma004-out.log",
         },
         {
             name: "stat_dcs012",
@@ -139,6 +139,13 @@ module.exports = {
             args: "--account daphne1",
             out_file: "logs/stat-daphne1-out.log",
             error_file: "logs/stat-daphne1-out.log",
+        },
+        {
+            name: "monit_zmq",
+            script: "monit-zmq.js",
+            args: "",
+            out_file: "logs/monit-zmq-out.log",
+            error_file: "logs/monit-zmq-out.log",
         },
     ],
 };
