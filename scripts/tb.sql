@@ -7,6 +7,7 @@ CREATE TABLE `tb_order_btech001` (
   `amount` float NOT NULL DEFAULT '0',
   `price` float NOT NULL DEFAULT '0',
   `notional` float NOT NULL DEFAULT '0',
+  `maker` tinyint(1) NULL DEFAULT 1,
   `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   KEY `idx_create_time` (`create_time`)
@@ -99,6 +100,7 @@ CREATE TABLE `tb_cmm_order_btech001` (
   `amount` float NOT NULL DEFAULT '0',
   `price` float NOT NULL DEFAULT '0',
   `notional` float NOT NULL DEFAULT '0',
+  `maker` tinyint(1) NULL DEFAULT 1,
   `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   KEY `idx_create_time` (`create_time`)

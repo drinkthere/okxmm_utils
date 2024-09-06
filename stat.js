@@ -69,8 +69,9 @@ const orderUpdateHandler = async (orders) => {
                 const amount = quantity * parseFloat(volContractMap[symbol]);
                 const price = order.lastFilledPrice;
                 const notional = price * amount;
+                const maker = order.isMaker;
 
-                const msg = `${account} ${clientOrderId} ${symbol} ${side} ${order.orderStatus} ${amount}@${price}`;
+                const msg = `${account} ${clientOrderId} ${symbol} ${side} ${order.orderStatus} ${amount}@${price} Maker(${maker})`;
                 log(msg);
 
                 // 将订单写入数据库
@@ -81,6 +82,7 @@ const orderUpdateHandler = async (orders) => {
                     amount,
                     price,
                     notional,
+                    maker,
                 });
             }
         });

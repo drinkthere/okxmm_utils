@@ -166,6 +166,7 @@ class OkxClient {
                 lastFilledPrice: parseFloat(o.fillPx),
                 orderStatus: this._formatOrderStatus(state),
                 executionType: executionType, // 用这个来标识是否是修改订单
+                isMaker: o.execType == "M" ? 1 : 0,
                 originalPrice: parseFloat(o.px),
                 originalQuantity: parseFloat(o.sz),
                 orderTime: parseInt(o.uTime),
