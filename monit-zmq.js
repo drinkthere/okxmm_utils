@@ -11,10 +11,10 @@ const alertCooldown = 5 * 60 * 1000; // 5 minutes in milliseconds
 const maxNotUpdateTime = 10000; // 10s
 const maxP99DelayTime = 50; // 35
 const ipcMap = {
-    btcSpotIPC: "tcp://172.31.16.148:55555",
-    ethSpotIPC: "tcp://172.31.16.148:55556",
-    btcFuturesIPC: "tcp://172.31.16.148:55557",
-    ethFuturesIPC: "tcp://172.31.16.148:55558",
+    btcSpotIPC: "tcp://127.0.0.1:55555",
+    ethSpotIPC: "tcp://127.0.0.1:55556",
+    btcFuturesIPC: "tcp://127.0.0.1:55557",
+    ethFuturesIPC: "tcp://127.0.0.1:55558",
 };
 const pbRoot = protobuf.loadSync("./proto/ticker.proto");
 const marketData = pbRoot.lookupType("MarketData");

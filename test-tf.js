@@ -9,7 +9,7 @@ const { hasUncaughtExceptionCaptureCallback } = require("process");
 const maxNotUpdateTime = 10000; // 10s
 const maxP99DelayTime = 50; // 35
 const ipcMap = {
-    tickerIPC: "tcp://172.31.16.149:55558",
+    tickerIPC: "tcp://127.0.0.1:55558",
 };
 const pbRoot = protobuf.loadSync("./proto/ticker.proto");
 const ticker = pbRoot.lookupType("MarketData");

@@ -99,6 +99,20 @@ module.exports = {
             error_file: "logs/stat-dcs015-out.log",
         },
         {
+            name: "stat_dcs021",
+            script: "highLeverStat.js",
+            args: "--account dcs021",
+            out_file: "logs/stat-dcs021-out.log",
+            error_file: "logs/stat-dcs021-out.log",
+        },
+        {
+            name: "stat_dcs022",
+            script: "highLeverStat.js",
+            args: "--account dcs022",
+            out_file: "logs/stat-dcs022-out.log",
+            error_file: "logs/stat-dcs022-out.log",
+        },
+        {
             name: "stat_sma009",
             script: "stat.js",
             args: "--account sma009",
@@ -146,6 +160,27 @@ module.exports = {
             args: "",
             out_file: "logs/monit-zmq-out.log",
             error_file: "logs/monit-zmq-out.log",
+        },
+        {
+            name: "stat_daphne2",
+            script: "stat.js",
+            args: "--account daphne2",
+            out_file: "logs/stat-daphne2-out.log",
+            error_file: "logs/stat-daphne2-out.log",
+        },
+        {
+            name: "stat_daphne3",
+            script: "stat.js",
+            args: "--account daphne3",
+            out_file: "logs/stat-daphne3-out.log",
+            error_file: "logs/stat-daphne3-out.log",
+        },
+        {
+            name: "stat_daphne4",
+            script: "stat.js",
+            args: "--account daphne4",
+            out_file: "logs/stat-daphne4-out.log",
+            error_file: "logs/stat-daphne4-out.log",
         },
     ],
 };

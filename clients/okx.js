@@ -141,6 +141,8 @@ class OkxClient {
                 unrealizedProfit: parseFloat(item.upl),
                 positionAmt: parseFloat(item.pos),
                 entryPrice: parseFloat(item.avgPx),
+                markPrice: parseFloat(item.markPx),
+                liqPrice: parseFloat(item.liqPx),
                 notional: notional,
             };
             stdPositions.push(pos);
@@ -203,6 +205,16 @@ class OkxClient {
             bestBid: ticker.bidPx,
             bestAsk: ticker.askPx,
         };
+    }
+
+    // 获取指定symbols的open中的order list
+    async getFuturesLeverage(instId) {
+        try {
+            const resp = await this.client.getLeverage(instId, "cross");
+            return resp[0].lever;
+        } catch (error) {
+            console.error("getFuturesOpenOrderList:", error);
+        }
     }
 
     // 获取指定symbols的open中的order list
@@ -800,6 +812,7 @@ class OkxClient {
             ret.push({
                 asset: detail.ccy,
                 balance: parseFloat(detail.eq),
+                availableBal: parseFloat(detail.availBal),
                 notional: parseFloat(detail.disEq),
             });
         }
@@ -1009,6 +1022,28 @@ class OkxClient {
         });
     }
 
+    async trasferAssetFromSubAccountToMainAccount(subAccount, asset, amount) {
+        return await this.client.fundsTransfer({
+            type: 2, // 用母账户APIKEY 将子账户的资金划转到母账户
+            subAcct: subAccount,
+            from: 6, // 资金账户
+            to: 6, // 资金账户
+            ccy: asset,
+            amt: amount,
+        });
+    }
+
+    async getSubAccountBalances(subAccount) {
+        return await this.client.getSubAccountBalances(subAccount);
+    }
+
+    async setSubAccountTransferOutPermission(subAccount, canTransOut = true) {
+        return await this.client.setSubAccountTransferOutPermission(
+            subAccount,
+            canTransOut
+        );
+    }
+
     // // --------------------------- websocket ---------------------------
     wsFuturesAccount() {
         this.wsClient.subscribe([
@@ -1028,6 +1063,7 @@ class OkxClient {
             {
                 channel: "positions",
                 instType: "SWAP",
+                extraParams: JSON.stringify({ updateInterval: "2000" }),
             },
         ]);
     }

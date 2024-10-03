@@ -33,7 +33,12 @@
         "dcs005": 16,
         "dcs008": 17,
         "daphne1": 18,
-        "sma004": 20
+        "sma004": 20,
+        "daphne2": 21,
+        "daphne3": 22,
+        "daphne4": 23,
+        "dcs021": 24,
+        "dcs022": 25
     },
     "okxLocalAddress": {
         "dcs009": "192.168.14.34",
@@ -55,7 +60,12 @@
         "dcs005": "192.168.14.41",
         "dcs008": "192.168.14.41",
         "daphne1": "192.168.14.44",
-        "sma004": "192.168.14.42"
+        "sma004": "192.168.14.42",
+        "daphne2": "192.168.14.42",
+        "daphne3": "192.168.14.40",
+        "daphne4": "192.168.14.40",
+        "dcs021": "192.168.14.40",
+        "dcs022": "192.168.14.41"
     },
     "market": {
         "dcs009": "colo",
@@ -77,6 +87,25 @@
         "dcs005": "colo",
         "dcs008": "colo",
         "daphne1": "prod",
-        "sma004": "colo"
+        "sma004": "colo",
+        "daphne2": "colo",
+        "daphne3": "colo",
+        "daphne4": "colo",
+        "dcs021": "colo",
+        "dcs022": "colo"
+    },
+    "highLeverageAcct": {
+        "dcs021": {
+            "initUsdtBalance": 1000,
+            "transferThres": 500,
+            "priceThres": 0.001,
+            "marginThres": 1.03
+        },
+        "dcs022": {
+            "initUsdtBalance": 1000,
+            "transferThres": 500,
+            "priceThres": 0.001,
+            "marginThres": 1.03
+        }
     }
 }

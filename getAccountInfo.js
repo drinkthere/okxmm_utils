@@ -62,6 +62,10 @@ const exchangeClient = new OkxClient(options);
 
 const main = async () => {
     try {
+        const leverage = await exchangeClient.getFuturesLeverage(
+            "ETH-USDT-SWAP"
+        );
+        console.log(`leverage is ${leverage}`);
         const balances = await exchangeClient.getFuturesBalances();
         console.log("Trading Account Balance:");
         if (balances && balances.length > 0) {

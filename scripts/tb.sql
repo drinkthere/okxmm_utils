@@ -1,5 +1,5 @@
 # for usdt market making program
-CREATE TABLE `tb_order_btech001` (
+CREATE TABLE `tb_order_bb-daphne1` (
   `id` int NOT NULL AUTO_INCREMENT,
   `symbol` varchar(20) NOT NULL DEFAULT '',
   `side` varchar(5) NOT NULL DEFAULT '',
@@ -13,11 +13,11 @@ CREATE TABLE `tb_order_btech001` (
   KEY `idx_create_time` (`create_time`)
 ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
-CREATE EVENT IF NOT EXISTS clear_orders_sma001
+CREATE EVENT IF NOT EXISTS `clear_orders_bb-daphne1`
 ON SCHEDULE EVERY 1 DAY
 STARTS (TIMESTAMP(CURRENT_DATE) + INTERVAL 1 DAY)
 DO
-  DELETE FROM tb_order_sma001 WHERE create_time < NOW() - INTERVAL 7 DAY;
+  DELETE FROM `tb_order_bb-daphne1` WHERE create_time < NOW() - INTERVAL 7 DAY;
 
 
 SELECT 
@@ -40,7 +40,6 @@ CREATE TABLE `tb_cmm_order_btech001` (
   `amount` float NOT NULL DEFAULT '0',
   `price` float NOT NULL DEFAULT '0',
   `notional` float NOT NULL DEFAULT '0',
-  `maker` tinyint(1) NULL DEFAULT 1,
   `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   KEY `idx_create_time` (`create_time`)
@@ -71,6 +70,15 @@ CREATE TABLE `tb_cmm_margin_ratio` (
   KEY `idx_account_create_time` (`account`, `create_time`)
 ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
+CREATE TABLE `tb_cmm_pnl` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `account` varchar(20) NOT NULL DEFAULT '',
+  `data` json NOT NULL,
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_account_create_time` (`account`, `create_time`)
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
 CREATE TABLE `tb_cmm_info` (
   `id` int NOT NULL AUTO_INCREMENT,
   `account` varchar(20) NOT NULL DEFAULT '',
@@ -83,6 +91,21 @@ CREATE TABLE `tb_cmm_info` (
   PRIMARY KEY (`id`),
   KEY `idx_account_create_time` (`account`, `create_time`)
 ) ENGINE=InnoDB AUTO_INCREMENT=1819840 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+CREATE TABLE `tb_cmm_order_btech001` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `symbol` varchar(20) NOT NULL DEFAULT '',
+  `side` varchar(5) NOT NULL DEFAULT '',
+  `quantity` int NOT NULL DEFAULT '0',
+  `amount` float NOT NULL DEFAULT '0',
+  `price` float NOT NULL DEFAULT '0',
+  `notional` float NOT NULL DEFAULT '0',
+  `maker` tinyint(1) NULL DEFAULT 1,
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_create_time` (`create_time`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+
 
 WITH first_last AS (
     SELECT 
