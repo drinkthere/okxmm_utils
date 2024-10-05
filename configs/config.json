@@ -38,7 +38,17 @@
         "daphne3": 22,
         "daphne4": 23,
         "dcs021": 24,
-        "dcs022": 25
+        "dcs022": 25,
+        "dcs031": 26,
+        "dcs032": 27,
+        "dcs033": 28,
+        "dcs034": 29,
+        "dcs035": 30,
+        "dcs036": 31,
+        "dcs037": 32,
+        "dcs038": 33,
+        "dcs039": 34,
+        "dcs040": 35
     },
     "okxLocalAddress": {
         "dcs009": "192.168.14.34",
@@ -65,7 +75,17 @@
         "daphne3": "192.168.14.40",
         "daphne4": "192.168.14.40",
         "dcs021": "192.168.14.40",
-        "dcs022": "192.168.14.41"
+        "dcs022": "192.168.14.41",
+        "dcs031": "192.168.14.33",
+        "dcs032": "192.168.14.34",
+        "dcs033": "192.168.14.35",
+        "dcs034": "192.168.14.36",
+        "dcs035": "192.168.14.37",
+        "dcs036": "192.168.14.38",
+        "dcs037": "192.168.14.40",
+        "dcs038": "192.168.14.41",
+        "dcs039": "192.168.14.42",
+        "dcs040": "192.168.14.33"
     },
     "market": {
         "dcs009": "colo",
@@ -92,7 +112,17 @@
         "daphne3": "colo",
         "daphne4": "colo",
         "dcs021": "colo",
-        "dcs022": "colo"
+        "dcs022": "colo",
+        "dcs031": "colo",
+        "dcs032": "colo",
+        "dcs033": "colo",
+        "dcs034": "colo",
+        "dcs035": "colo",
+        "dcs036": "colo",
+        "dcs037": "colo",
+        "dcs038": "colo",
+        "dcs039": "colo",
+        "dcs040": "colo"
     },
     "highLeverageAcct": {
         "dcs021": {
@@ -102,6 +132,66 @@
             "marginThres": 1.03
         },
         "dcs022": {
+            "initUsdtBalance": 1000,
+            "transferThres": 500,
+            "priceThres": 0.001,
+            "marginThres": 1.03
+        },
+        "dcs031": {
+            "initUsdtBalance": 1000,
+            "transferThres": 500,
+            "priceThres": 0.001,
+            "marginThres": 1.03
+        },
+        "dcs032": {
+            "initUsdtBalance": 1000,
+            "transferThres": 500,
+            "priceThres": 0.001,
+            "marginThres": 1.03
+        },
+        "dcs033": {
+            "initUsdtBalance": 1000,
+            "transferThres": 500,
+            "priceThres": 0.001,
+            "marginThres": 1.03
+        },
+        "dcs034": {
+            "initUsdtBalance": 1000,
+            "transferThres": 500,
+            "priceThres": 0.001,
+            "marginThres": 1.03
+        },
+        "dcs035": {
+            "initUsdtBalance": 1000,
+            "transferThres": 500,
+            "priceThres": 0.001,
+            "marginThres": 1.03
+        },
+        "dcs036": {
+            "initUsdtBalance": 1000,
+            "transferThres": 500,
+            "priceThres": 0.001,
+            "marginThres": 1.03
+        },
+        "dcs037": {
+            "initUsdtBalance": 1000,
+            "transferThres": 500,
+            "priceThres": 0.001,
+            "marginThres": 1.03
+        },
+        "dcs038": {
+            "initUsdtBalance": 1000,
+            "transferThres": 500,
+            "priceThres": 0.001,
+            "marginThres": 1.03
+        },
+        "dcs039": {
+            "initUsdtBalance": 1000,
+            "transferThres": 500,
+            "priceThres": 0.001,
+            "marginThres": 1.03
+        },
+        "dcs040": {
             "initUsdtBalance": 1000,
             "transferThres": 500,
             "priceThres": 0.001,
