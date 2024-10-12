@@ -484,16 +484,16 @@ const scheduleDeposit = async () => {
 };
 
 const main = async () => {
-    // await loadVolContractInfo();
-    // exchangeClient.initWsEventHandler({
-    //     orders: orderUpdateHandler,
-    //     positions: positionUpdateHandler,
-    // });
-    // exchangeClient.wsFuturesOrders();
-    // exchangeClient.wsFuturesPositions();
-    // scheduleStatProfit();
-    // scheduleWithdraw();
-    // scheduleRiskControl();
-    // scheduleRefund();
+    await loadVolContractInfo();
+    exchangeClient.initWsEventHandler({
+        orders: orderUpdateHandler,
+        positions: positionUpdateHandler,
+    });
+    exchangeClient.wsFuturesOrders();
+    exchangeClient.wsFuturesPositions();
+    scheduleStatProfit();
+    scheduleWithdraw();
+    scheduleRiskControl();
+    scheduleDeposit();
 };
 main();
