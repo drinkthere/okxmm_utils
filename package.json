@@ -9,7 +9,7 @@
         "okx-api": "file:okx-api",
         "pm2": "^5.3.1",
         "protobufjs": "^7.3.2",
-        "redis": "^4.7.0",
+        "redis": "4.0.6",
         "uuid": "^9.0.1",
         "zeromq": "^6.0.8"
     }
