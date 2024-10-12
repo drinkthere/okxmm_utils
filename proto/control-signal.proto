@@ -1,0 +1,6 @@
+syntax = "proto3";
+option go_package = "protocol/pb";
+message ControlSignal {
+  string account = 1; // dcs011 | dcs012 ...
+  string signal = 2; // STOP | START
+}

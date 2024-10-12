@@ -3,7 +3,6 @@ const { v4: uuidv4 } = require("uuid");
 const http = require("https");
 const https = require("https");
 const { sleep, convertScientificToString } = require("../utils/run");
-const { Console } = require("console");
 
 class OkxClient {
     constructor(options = {}) {
@@ -478,6 +477,56 @@ class OkxClient {
         }
     }
 
+    async placeReduceOnlyMarketOrder(side, symbol, quantity, params = {}) {
+        try {
+            side = side.toLowerCase();
+            const order = {
+                instId: symbol,
+                ordType: "market", // 后续可以根据params中的数据读取
+                side,
+                sz: quantity + "",
+                reduceOnly: true,
+                tdMode: "cross",
+            };
+            if (params["newClientOrderId"] != null) {
+                order["clOrdId"] = params.newClientOrderId;
+            }
+            const resp = await this.client.submitOrder(order);
+            if (resp != null && resp.length == 1) {
+                let success = true;
+                const result = resp[0];
+                if (result.sCode != 0) {
+                    console.log(
+                        `FAILED place order ${symbol} ${side} ${quantity}, msg:${result.sMsg}`
+                    );
+                    success = false;
+                }
+                return {
+                    symbol: order.instId,
+                    success: success,
+                    msg: result.sMsg,
+                    clientOrderId: result.clOrdId,
+                    side: order.side.toUpperCase(),
+                    origQty: order.sz,
+                };
+            } else {
+                console.log(
+                    `FAILED place order ${symbol} ${side} ${quantity}, resp is null`
+                );
+            }
+        } catch (e) {
+            console.log(side, symbol, quantity, params, e);
+            if (e.data && e.data.length > 0) {
+                const errorInfo = e.data[0];
+                return {
+                    code: errorInfo.sCode,
+                    clientOrderId: errorInfo.clOrdId,
+                    msg: errorInfo.sMsg,
+                };
+            }
+        }
+    }
+
     async placeMarketOrder(side, symbol, quantity, params = {}) {
         try {
             side = side.toLowerCase();
@@ -491,14 +540,29 @@ class OkxClient {
             if (params["newClientOrderId"] != null) {
                 order["clOrdId"] = params.newClientOrderId;
             }
-            await this.client.submitOrder(order);
-            return {
-                symbol: order.instId,
-                status: "NEW",
-                clientOrderId: order.clOrdId,
-                side: order.side.toUpperCase(),
-                origQty: order.sz,
-            };
+            const resp = await this.client.submitOrder(order);
+            if (resp != null && resp.length == 1) {
+                let success = true;
+                const result = resp[0];
+                if (result.sCode != 0) {
+                    console.log(
+                        `FAILED place order ${symbol} ${side} ${quantity}, msg:${result.sMsg}`
+                    );
+                    success = false;
+                }
+                return {
+                    symbol: order.instId,
+                    success: success,
+                    msg: result.sMsg,
+                    clientOrderId: result.clOrdId,
+                    side: order.side.toUpperCase(),
+                    origQty: order.sz,
+                };
+            } else {
+                console.log(
+                    `FAILED place order ${symbol} ${side} ${quantity}, resp is null`
+                );
+            }
         } catch (e) {
             console.log(side, symbol, quantity, params, e);
             if (e.data && e.data.length > 0) {

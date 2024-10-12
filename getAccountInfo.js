@@ -62,6 +62,9 @@ const exchangeClient = new OkxClient(options);
 
 const main = async () => {
     try {
+        const positionMode = await exchangeClient.getPositionMode();
+        console.log(`position mode is ${positionMode}`);
+        console.log();
         const leverage = await exchangeClient.getFuturesLeverage(
             "ETH-USDT-SWAP"
         );

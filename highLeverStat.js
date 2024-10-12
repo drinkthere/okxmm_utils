@@ -1,3 +1,5 @@
+const redis = require("redis");
+const protobuf = require("protobufjs");
 const AsyncLock = require("async-lock");
 const { scheduleLoopTask, sleep, fileExists } = require("./utils/run.js");
 const { log } = require("./utils/log.js");
@@ -40,13 +42,26 @@ const lock = new AsyncLock();
 
 // 初始化stat order service
 const statOrderService = new StatOrderService();
+
+// 初始化tg service
 const tgService = new TgService();
+
+// 初始化Redis服务
+const publisher = redis.createClient({
+    url: `redis://default:${process.env.REDIS_PASS}@${process.env.REDIS_IPC}`,
+});
+publisher.on("error", (err) => {
+    console.error("Redis error:", err);
+});
+
 const limiter = new LimiterService(2, 24 * 60 * 60 * 1000);
 let noOrders = 0;
 let maxNoOrdersTime = 5;
 let highLeverageAcctCfg = configs.highLeverageAcct[account];
-let closePositionFlag = false;
-
+let closing = false; // 是否在平仓中
+let triggerDeposit = false;
+let maxRetries = 3;
+let retryCooldown = 500;
 let volContractMap = {};
 const loadVolContractInfo = async () => {
     let insts = await exchangeClient.getInstruments("SWAP");
@@ -66,11 +81,14 @@ const positionUpdateHandler = async (positions) => {
                 `${pos.symbol} markPrice:${pos.markPrice} liqPrice:${pos.liqPrice} diffRatio:${diffRatio} priceThreshold:${highLeverageAcctCfg.priceThres}`
             );
 
-            // 获取当前position，市价平仓
-            if (!closePositionFlag) {
-                await closePositions();
+            // 发送停止下单的消息
+            await sendSignal(account, "STOP");
+
+            // 平仓
+            const success = await closePositions();
+            if (success) {
+                triggerDeposit = true;
             }
-            closePositionFlag = true;
         }
     }
 };
@@ -231,7 +249,7 @@ const scheduleStatProfit = () => {
     });
 };
 
-const scheduleTransferFund = async () => {
+const scheduleWithdraw = async () => {
     scheduleLoopTask(async () => {
         try {
             const { usdtBalance, availableUsdtBalance } =
@@ -247,38 +265,45 @@ const scheduleTransferFund = async () => {
                     `[!!!] usdtBalance=${usdtBalance}, availableUsdtBalance=${availableUsdtBalance}, transferThres=${highLeverageAcctCfg.transferThres}`
                 );
 
+                await sendSignal(account, "STOP");
+
                 // 获取当前position，市价平仓
-                await closePositions();
+                const result = await closePositions();
+                if (result) {
+                    // 从trading账户中，转transferThres 到funding账户中
+                    log(
+                        `transfer ${highLeverageAcctCfg.transferThres} USDT from trading account to funding account`
+                    );
+                    await exchangeClient.trasferAsset(
+                        "Trading",
+                        "Funding",
+                        "USDT",
+                        highLeverageAcctCfg.transferThres
+                    );
 
-                // 从trading账户中，转transferThres 到funding账户中
-                log(
-                    `transfer ${highLeverageAcctCfg.transferThres} USDT from trading account to funding account`
-                );
-                await exchangeClient.trasferAsset(
-                    "Trading",
-                    "Funding",
-                    "USDT",
-                    highLeverageAcctCfg.transferThres
-                );
+                    await sleep(1000);
+                    const newBalance = await getUSDTBalance();
+                    const fBalances =
+                        await exchangeClient.getFundingAccountBalances();
+                    const fUsdtBalance = fBalances[0]
+                        ? fBalances[0].balance
+                        : 0;
 
-                await sleep(1000);
-                const newBalance = await getUSDTBalance();
-                const fBalances =
-                    await exchangeClient.getFundingAccountBalances();
-                const fUsdtBalance = fBalances[0] ? fBalances[0].balance : 0;
-
-                const newPositions = await exchangeClient.getPositions();
-                console.log(
-                    `Trading Account USDT Balace: ${newBalance.usdtBalance}, Funding Account USDT Balance: ${fUsdtBalance}`
-                );
-                if (newPositions.length > 0) {
-                    console.log("Current Positions:");
-                    for (let pos of newPositions) {
-                        console.log(`${pos.symbol} ${pos.positionAmt}`);
+                    const newPositions = await exchangeClient.getPositions();
+                    console.log(
+                        `Trading Account USDT Balace: ${newBalance.usdtBalance}, Funding Account USDT Balance: ${fUsdtBalance}`
+                    );
+                    if (newPositions.length > 0) {
+                        console.log("Current Positions:");
+                        for (let pos of newPositions) {
+                            console.log(`${pos.symbol} ${pos.positionAmt}`);
+                        }
+                    } else {
+                        console.log("Current No Positions");
                     }
-                } else {
-                    console.log("Current No Positions");
                 }
+                // 有盈利平仓，平仓失败也继续恢复下单
+                await sendSignal(account, "START");
             }
         } catch (e) {
             console.error(e);
@@ -291,7 +316,10 @@ const getUSDTBalance = async () => {
     const balances = await exchangeClient.getFuturesBalances();
     let usdtBalanceArr = balances.filter((item) => item.asset == "USDT");
 
-    let usdtBalItem = usdtBalanceArr.length == 0 ? 0 : usdtBalanceArr[0];
+    let usdtBalItem =
+        usdtBalanceArr.length == 0
+            ? { balance: 0, availableBal: 0 }
+            : usdtBalanceArr[0];
 
     return {
         usdtBalance: usdtBalItem.balance,
@@ -300,17 +328,79 @@ const getUSDTBalance = async () => {
 };
 
 const closePositions = async () => {
-    const positions = await exchangeClient.getPositions();
-    for (let pos of positions) {
-        if (pos.positionAmt != 0) {
-            const side = pos.positionAmt > 0 ? "SELL" : "BUY";
-            const symbol = pos.symbol;
-            const quantity = Math.abs(pos.positionAmt);
-            log(
-                `close ${symbol} position ${pos.positionAmt} to place market order ${side}, ${quantity}`
-            );
-            await exchangeClient.placeMarketOrder(side, symbol, quantity);
+    // 获取当前position，市价平仓
+    if (!closing) {
+        let i = 0;
+        let success = true;
+        let msg = "";
+        while (i < maxRetries) {
+            const positions = await exchangeClient.getPositions();
+            for (let pos of positions) {
+                if (pos.positionAmt != 0) {
+                    const side = pos.positionAmt > 0 ? "SELL" : "BUY";
+                    const symbol = pos.symbol;
+                    const quantity = Math.abs(pos.positionAmt);
+                    log(
+                        `close ${symbol} position ${pos.positionAmt} to place market order ${side}, ${quantity}`
+                    );
+
+                    let firstOrderQty = Math.floor(quantity / 2);
+                    let secondOrderQty = quantity - firstOrderQty;
+                    if (firstOrderQty > 0) {
+                        const result =
+                            await exchangeClient.placeReduceOnlyMarketOrder(
+                                side,
+                                symbol,
+                                quantity
+                            );
+                        if (!result.success) {
+                            success = false;
+                            msg = result.msg;
+                        }
+                    }
+                    if (secondOrderQty > 0) {
+                        const result =
+                            await exchangeClient.placeReduceOnlyMarketOrder(
+                                side,
+                                symbol,
+                                quantity
+                            );
+                        if (!result.success) {
+                            success = false;
+                            msg = result.msg;
+                        }
+                    }
+                }
+            }
+
+            await sleep(retryCooldown);
+            if (!success) {
+                i++;
+                success = true;
+            } else {
+                break;
+            }
         }
+    }
+    closing = true;
+
+    if (!success) {
+        // 报警
+        tgService.sendMsg(`FAILED to close ${account} position, msg:`, msg);
+        return false;
+    }
+    return true;
+};
+
+const sendSignal = async (account, signal) => {
+    const channel = "control_signal";
+    const message = `${account}|${signal}`;
+
+    try {
+        const reply = await publisher.publish(channel, message);
+        log(`Message published to ${channel}: ${message} (Replies: ${reply})`);
+    } catch (e) {
+        console.error("Error publishing message:", channel, message, e);
     }
 };
 
@@ -319,11 +409,14 @@ const scheduleRiskControl = async () => {
         try {
             const marginRatio = await exchangeClient.getMarginRatio();
             if (marginRatio <= 1.03) {
-                // 获取当前position，市价平仓
-                if (!closePositionFlag) {
-                    await closePositions();
+                // 发送停止下单的消息
+                await sendSignal(account, "STOP");
+
+                // 平仓
+                const success = await closePositions();
+                if (success) {
+                    triggerDeposit = true;
                 }
-                closePositionFlag = true;
             }
         } catch (e) {
             console.error(e);
@@ -332,16 +425,23 @@ const scheduleRiskControl = async () => {
     });
 };
 
-const scheduleRefund = async () => {
+const scheduleDeposit = async () => {
     scheduleLoopTask(async () => {
         try {
-            // 当有过平仓操作之后，才会进入逻辑里面
-            if (closePositionFlag) {
+            // 当需要充值时，才会进入逻辑里面
+            if (triggerDeposit) {
                 // 没有达到操作上限才可以继续进行
                 if (limiter.canPerformAction()) {
                     // 获取Trading Account USDT 余额
                     const { usdtBalance, availableUsdtBalance } =
                         await getUSDTBalance();
+
+                    if (usdtBalance < 0) {
+                        log(
+                            `NOT ReFund, because Trading Account Balance is less than 0 ${usdtBalance}`
+                        );
+                        return;
+                    }
 
                     // 获取funding Account USDT 余额
                     const fBalances =
@@ -366,7 +466,13 @@ const scheduleRefund = async () => {
                             diff
                         );
                         limiter.performAction();
-                        closePositionFlag = false;
+                        triggerDeposit = false;
+                        // 发送继续下单的消息
+                        await sendSignal(account, "START");
+                    } else {
+                        tgService.sendMsg(
+                            `Funding Account USDT Balance(${fUsdtBalance} < ${diff}) is not enough to deposit`
+                        );
                     }
                 }
             }
@@ -378,16 +484,16 @@ const scheduleRefund = async () => {
 };
 
 const main = async () => {
-    await loadVolContractInfo();
-    exchangeClient.initWsEventHandler({
-        orders: orderUpdateHandler,
-        positions: positionUpdateHandler,
-    });
-    exchangeClient.wsFuturesOrders();
-    exchangeClient.wsFuturesPositions();
-    scheduleStatProfit();
-    scheduleTransferFund();
-    scheduleRiskControl();
-    scheduleRefund();
+    // await loadVolContractInfo();
+    // exchangeClient.initWsEventHandler({
+    //     orders: orderUpdateHandler,
+    //     positions: positionUpdateHandler,
+    // });
+    // exchangeClient.wsFuturesOrders();
+    // exchangeClient.wsFuturesPositions();
+    // scheduleStatProfit();
+    // scheduleWithdraw();
+    // scheduleRiskControl();
+    // scheduleRefund();
 };
 main();

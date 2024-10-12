@@ -1,5 +1,5 @@
 # for usdt market making program
-CREATE TABLE `tb_order_bb-daphne1` (
+CREATE TABLE `tb_order_fbg001` (
   `id` int NOT NULL AUTO_INCREMENT,
   `symbol` varchar(20) NOT NULL DEFAULT '',
   `side` varchar(5) NOT NULL DEFAULT '',
@@ -17,7 +17,7 @@ CREATE EVENT IF NOT EXISTS `clear_orders_bb-daphne1`
 ON SCHEDULE EVERY 1 DAY
 STARTS (TIMESTAMP(CURRENT_DATE) + INTERVAL 1 DAY)
 DO
-  DELETE FROM `tb_order_bb-daphne1` WHERE create_time < NOW() - INTERVAL 7 DAY;
+  DELETE FROM `tb_order_fbg001` WHERE create_time < NOW() - INTERVAL 7 DAY;
 
 
 SELECT 
