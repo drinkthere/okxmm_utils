@@ -1,9 +1,10 @@
 const redis = require("redis");
 const { log } = require("./utils/log.js");
 const { scheduleLoopTask, sleep } = require("./utils/run.js");
-
+const dotenv = require("dotenv");
+dotenv.config();
 const publisher = redis.createClient({
-    url: "redis://default:MhxzKhl%402023@localhost:6379",
+    url: `redis://default:${process.env.REDIS_PASS}@${process.env.REDIS_IPC}`,
 });
 publisher.on("error", (err) => {
     console.error("Redis error:", err);

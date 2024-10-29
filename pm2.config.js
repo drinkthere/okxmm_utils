@@ -15,6 +15,13 @@ module.exports = {
             error_file: "logs/stat-dcs005-out.log",
         },
         {
+            name: "stat_dcs006",
+            script: "stat.js",
+            args: "--account dcs006",
+            out_file: "logs/stat-dcs006-out.log",
+            error_file: "logs/stat-dcs006-out.log",
+        },
+        {
             name: "stat_dcs008",
             script: "stat.js",
             args: "--account dcs008",

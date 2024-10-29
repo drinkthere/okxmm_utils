@@ -9,8 +9,8 @@ const { hasUncaughtExceptionCaptureCallback } = require("process");
 const maxNotUpdateTime = 10000; // 10s
 const maxP99DelayTime = 50; // 35
 const ipcMap = {
-    tickerIPC: "tcp://192.168.14.34:56001",
-    orderBookIPC: "tcp://192.168.14.34:56002",
+    tickerIPC: "tcp://127.0.0.1:56001",
+    orderBookIPC: "tcp://192.168.14.123:56002",
 };
 const tickerRoot = protobuf.loadSync("./proto/okxticker.proto");
 const ticker = tickerRoot.lookupType("OkxTicker");
@@ -23,13 +23,13 @@ const subscribeMsg = async () => {
     for (let key of Object.keys(ipcMap)) {
         const ipc = ipcMap[key];
 
-        const subscriber = zmq.socket("sub");
+        const subscriber = new zmq.Subscriber();
         subscriber.connect(ipc);
         subscriber.subscribe("");
 
-        subscriber.on("message", (pbMsg, foo) => {
-            messageHandler(key, pbMsg);
-        });
+        for await (const [topic, msg] of subscriber) {
+            messageHandler(key, topic);
+        }
         subscribeArr.push(subscriber);
     }
 };
@@ -37,6 +37,7 @@ const subscribeMsg = async () => {
 const messageHandler = (key, pbMsg) => {
     if (key == "tickerIPC") {
         const message = ticker.decode(pbMsg);
+        // if (message.instID == "ADA-USDT-SWAP") {
         console.log(
             message.instID,
             message.instType,
@@ -44,6 +45,7 @@ const messageHandler = (key, pbMsg) => {
             message.bestAsk,
             message.eventTs.toNumber()
         );
+        // }
     } else if (key == "orderBookIPC") {
         const message = orderBook.decode(pbMsg);
         //console.log(message.instID, message.instType, message.asks.length, message.bids.length)

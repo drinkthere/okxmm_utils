@@ -1,9 +1,9 @@
 const fs = require("fs");
 
 // 读取public.log文件内容
-const publicData = fs.readFileSync("public.log", "utf-8").trim().split("\n");
+const publicData = fs.readFileSync("bcolo.log", "utf-8").trim().split("\n");
 // 读取private.log文件内容
-const privateData = fs.readFileSync("private.log", "utf-8").trim().split("\n");
+const privateData = fs.readFileSync("ccolo.log", "utf-8").trim().split("\n");
 
 // 将文件内容解析为行数据
 const publicLines = publicData.map((line) => line.split(" "));
@@ -37,6 +37,6 @@ console.log("差值评估:");
 for (const key in diffMap) {
     const diff = diffMap[key];
     const evaluation = diff > 0 ? "公共文件效果较好" : "私有文件效果较好";
-    //console.log(`Key ${key}: 差值 ${diff}, 评估: ${evaluation}`);
+    console.log(`Key ${key}: 差值 ${diff}, 评估: ${evaluation}`);
 }
 console.log("平均差值:", averageDiff);

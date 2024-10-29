@@ -9,7 +9,7 @@ const { hasUncaughtExceptionCaptureCallback } = require("process");
 const maxNotUpdateTime = 10000; // 10s
 const maxP99DelayTime = 50; // 35
 const ipcMap = {
-    tickerIPC: "tcp://127.0.0.1:55558",
+    tickerIPC: "tcp://172.31.16.161:35554",
 };
 const pbRoot = protobuf.loadSync("./proto/ticker.proto");
 const ticker = pbRoot.lookupType("MarketData");
@@ -19,13 +19,13 @@ const subscribeMsg = async () => {
     for (let key of Object.keys(ipcMap)) {
         const ipc = ipcMap[key];
 
-        const subscriber = zmq.socket("sub");
+        const subscriber = new zmq.Subscriber();
         subscriber.connect(ipc);
         subscriber.subscribe("");
 
-        subscriber.on("message", (pbMsg, foo) => {
-            messageHandler(key, pbMsg);
-        });
+        for await (const [topic, msg] of subscriber) {
+            messageHandler(key, topic);
+        }
         subscribeArr.push(subscriber);
     }
 };

@@ -47,14 +47,22 @@ const statOrderService = new StatOrderService();
 const tgService = new TgService();
 
 // 初始化Redis服务
-const publisher = redis.createClient({
-    url: `redis://default:${process.env.REDIS_PASS}@${process.env.REDIS_IPC}`,
-});
-publisher.on("error", (err) => {
-    console.error("Redis error:", err);
-});
+let publisher; // Declare at a higher scope
+const setupPublisher = async () => {
+    publisher = redis.createClient({
+        url: `redis://default:${process.env.REDIS_PASS}@${process.env.REDIS_IPC}`,
+    });
+
+    publisher.on("error", async (err) => {
+        console.error("Redis error:", err);
+        await sleep(1000);
+        setupPublisher();
+    });
+    await publisher.connect();
+};
 
 const limiter = new LimiterService(2, 24 * 60 * 60 * 1000);
+const tgLimiter = new LimiterService(2, 60 * 1000);
 let noOrders = 0;
 let maxNoOrdersTime = 5;
 let highLeverageAcctCfg = configs.highLeverageAcct[account];
@@ -73,22 +81,28 @@ const loadVolContractInfo = async () => {
 
 const positionUpdateHandler = async (positions) => {
     for (let pos of positions) {
-        const diffPrice = Math.abs(pos.liqPrice - pos.markPrice);
-        const diffRatio = diffPrice / pos.liqPrice;
+        if (pos.liqPrice > 0) {
+            const diffPrice = Math.abs(pos.liqPrice - pos.markPrice);
+            const diffRatio = diffPrice / pos.liqPrice;
 
-        if (diffRatio <= highLeverageAcctCfg.priceThres) {
-            log(
-                `${pos.symbol} markPrice:${pos.markPrice} liqPrice:${pos.liqPrice} diffRatio:${diffRatio} priceThreshold:${highLeverageAcctCfg.priceThres}`
-            );
+            if (diffRatio <= highLeverageAcctCfg.priceThres) {
+                log(
+                    `${pos.symbol} markPrice:${pos.markPrice} liqPrice:${pos.liqPrice} diffRatio:${diffRatio} priceThreshold:${highLeverageAcctCfg.priceThres}`
+                );
 
-            // 发送停止下单的消息
-            await sendSignal(account, "STOP");
+                // 发送停止下单的消息
+                await sendSignal(account, "STOP");
 
-            // 平仓
-            const success = await closePositions();
-            if (success) {
-                triggerDeposit = true;
+                // 平仓
+                const success = await closePositions();
+                if (success) {
+                    triggerDeposit = true;
+                }
+            } else {
+                log(`${pos.symbol} normal diffRatio:${diffRatio}`);
             }
+        } else {
+            log(`${pos.symbol} normal liqPrice:${pos.liqPrice}`);
         }
     }
 };
@@ -282,25 +296,6 @@ const scheduleWithdraw = async () => {
                     );
 
                     await sleep(1000);
-                    const newBalance = await getUSDTBalance();
-                    const fBalances =
-                        await exchangeClient.getFundingAccountBalances();
-                    const fUsdtBalance = fBalances[0]
-                        ? fBalances[0].balance
-                        : 0;
-
-                    const newPositions = await exchangeClient.getPositions();
-                    console.log(
-                        `Trading Account USDT Balace: ${newBalance.usdtBalance}, Funding Account USDT Balance: ${fUsdtBalance}`
-                    );
-                    if (newPositions.length > 0) {
-                        console.log("Current Positions:");
-                        for (let pos of newPositions) {
-                            console.log(`${pos.symbol} ${pos.positionAmt}`);
-                        }
-                    } else {
-                        console.log("Current No Positions");
-                    }
                 }
                 // 有盈利平仓，平仓失败也继续恢复下单
                 await sendSignal(account, "START");
@@ -330,47 +325,54 @@ const getUSDTBalance = async () => {
 const closePositions = async () => {
     // 获取当前position，市价平仓
     if (!closing) {
+        closing = true;
         let i = 0;
         let success = true;
         let msg = "";
         while (i < maxRetries) {
             const positions = await exchangeClient.getPositions();
-            for (let pos of positions) {
-                if (pos.positionAmt != 0) {
-                    const side = pos.positionAmt > 0 ? "SELL" : "BUY";
-                    const symbol = pos.symbol;
-                    const quantity = Math.abs(pos.positionAmt);
-                    log(
-                        `close ${symbol} position ${pos.positionAmt} to place market order ${side}, ${quantity}`
-                    );
+            if (positions != null && positions.length > 0) {
+                for (let pos of positions) {
+                    if (pos.positionAmt != 0) {
+                        const side = pos.positionAmt > 0 ? "SELL" : "BUY";
+                        const symbol = pos.symbol;
+                        const quantity = Math.abs(pos.positionAmt);
+                        log(
+                            `close ${symbol} position ${pos.positionAmt} to place market order ${side}, ${quantity}`
+                        );
 
-                    let firstOrderQty = Math.floor(quantity / 2);
-                    let secondOrderQty = quantity - firstOrderQty;
-                    if (firstOrderQty > 0) {
-                        const result =
-                            await exchangeClient.placeReduceOnlyMarketOrder(
-                                side,
-                                symbol,
-                                quantity
-                            );
-                        if (!result.success) {
-                            success = false;
-                            msg = result.msg;
+                        let firstOrderQty = Math.floor(quantity / 2);
+                        let secondOrderQty = Math.floor(
+                            quantity - firstOrderQty
+                        );
+                        if (firstOrderQty > 0) {
+                            const result =
+                                await exchangeClient.placeReduceOnlyMarketOrder(
+                                    side,
+                                    symbol,
+                                    firstOrderQty
+                                );
+                            if (!result.success) {
+                                success = false;
+                                msg = result.msg;
+                            }
                         }
-                    }
-                    if (secondOrderQty > 0) {
-                        const result =
-                            await exchangeClient.placeReduceOnlyMarketOrder(
-                                side,
-                                symbol,
-                                quantity
-                            );
-                        if (!result.success) {
-                            success = false;
-                            msg = result.msg;
+                        if (secondOrderQty > 0) {
+                            const result =
+                                await exchangeClient.placeReduceOnlyMarketOrder(
+                                    side,
+                                    symbol,
+                                    secondOrderQty
+                                );
+                            if (!result.success) {
+                                success = false;
+                                msg = result.msg;
+                            }
                         }
                     }
                 }
+            } else {
+                console.log("no positions");
             }
 
             await sleep(retryCooldown);
@@ -381,14 +383,20 @@ const closePositions = async () => {
                 break;
             }
         }
+        if (!success) {
+            // 报警
+            if (tgLimiter.canPerformAction()) {
+                tgService.sendMsg(
+                    `FAILED to close ${account} position, msg:`,
+                    msg
+                );
+                tgLimiter.performAction();
+            }
+            closing = false;
+            return false;
+        }
     }
-    closing = true;
-
-    if (!success) {
-        // 报警
-        tgService.sendMsg(`FAILED to close ${account} position, msg:`, msg);
-        return false;
-    }
+    closing = false;
     return true;
 };
 
@@ -423,6 +431,17 @@ const scheduleRiskControl = async () => {
         }
         await sleep(5 * 1000);
     });
+    scheduleLoopTask(async () => {
+        try {
+            const positions = await exchangeClient.getPositions();
+            if (positions != null && positions.length > 0) {
+                positionUpdateHandler(positions);
+            }
+        } catch (e) {
+            console.error(e);
+        }
+        await sleep(500);
+    });
 };
 
 const scheduleDeposit = async () => {
@@ -438,7 +457,7 @@ const scheduleDeposit = async () => {
 
                     if (usdtBalance < 0) {
                         log(
-                            `NOT ReFund, because Trading Account Balance is less than 0 ${usdtBalance}`
+                            `${account} Faiiled to Deposit, because Trading Account Balance is less than 0 ${usdtBalance}`
                         );
                         return;
                     }
@@ -453,11 +472,11 @@ const scheduleDeposit = async () => {
                     const diff =
                         highLeverageAcctCfg.initUsdtBalance - usdtBalance;
                     log(
-                        `Trading Account USDT Balance ${usdtBalance}, Funding Account USDT Balance ${fUsdtBalance}`
+                        `${account} Trading Account USDT Balance ${usdtBalance}, Funding Account USDT Balance ${fUsdtBalance}`
                     );
-                    if (diff > 0 && fUsdtBalance > diff) {
+                    if (diff > 0 && fUsdtBalance >= diff) {
                         log(
-                            `Transfer ${diff} USDT From Funding Account to Trading Account`
+                            `${account}  Transfer ${diff} USDT From Funding Account to Trading Account`
                         );
                         await exchangeClient.trasferAsset(
                             "Funding",
@@ -470,9 +489,16 @@ const scheduleDeposit = async () => {
                         // 发送继续下单的消息
                         await sendSignal(account, "START");
                     } else {
-                        tgService.sendMsg(
-                            `Funding Account USDT Balance(${fUsdtBalance} < ${diff}) is not enough to deposit`
-                        );
+                        if (diff > 0) {
+                            tgService.sendMsg(
+                                `${account} Funding Account USDT Balance(${fUsdtBalance} < ${diff}) is not enough to deposit`
+                            );
+                            await sleep(5 * 60 * 1000);
+                        } else {
+                            // 已通过其他方式充值，重启服务
+                            triggerDeposit = false;
+                            await sendSignal(account, "START");
+                        }
                     }
                 }
             }
@@ -484,6 +510,8 @@ const scheduleDeposit = async () => {
 };
 
 const main = async () => {
+    await setupPublisher();
+
     await loadVolContractInfo();
     exchangeClient.initWsEventHandler({
         orders: orderUpdateHandler,

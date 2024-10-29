@@ -1,8 +1,11 @@
-const AsyncLock = require("async-lock");
-const { scheduleLoopTask, sleep, fileExists } = require("./utils/run");
-const { log } = require("./utils/log");
 const OkxClient = require("./clients/okx");
-const total = 1000;
+const { v4: uuidv4 } = require("uuid");
+const {
+    scheduleLoopTask,
+    sleep,
+    convertScientificToString,
+    fileExists,
+} = require("./utils/run");
 const cfgFile = `./configs/config.json`;
 if (!fileExists(cfgFile)) {
     log(`config file ${cfgFile} does not exits`);
@@ -10,12 +13,12 @@ if (!fileExists(cfgFile)) {
 }
 const configs = require(cfgFile);
 
-let { account, market } = require("minimist")(process.argv.slice(2));
+const { account } = require("minimist")(process.argv.slice(2));
 if (account == null) {
-    log("node testTickerSpeed.js --account=xxx --market=xxx");
+    log("node close.js --account=xxx");
     process.exit();
 }
-market = market == null ? "prod" : market;
+
 const keyIndex = configs.keyIndexMap[account];
 // 加载.env文件
 const dotenv = require("dotenv");
@@ -28,24 +31,22 @@ let options = {
     API_KEY: apiKeyArr[keyIndex],
     API_SECRET: apiSecretArr[keyIndex],
     API_PASSWORD: apiPasswordArr[keyIndex],
-    market: market,
+    market: configs.market[account],
     localAddress: configs.okxLocalAddress[account],
 };
-
 const exchangeClient = new OkxClient(options);
 
-let curr = 0;
-const tickerUpdate = async (event) => {
-    console.log(event.data[0].ts, Date.now());
-    curr++;
-    if (curr > total) {
-        process.exit();
-    }
+const genClientOrderId = () => {
+    return uuidv4().replace(/-/g, "");
 };
+
 const main = async () => {
-    exchangeClient.initWsEventHandler({
-        tickers: tickerUpdate,
-    });
-    exchangeClient.wsFuturesBookTicker(["BTC-USDT-SWAP"]);
+    const result = await exchangeClient.trasferAsset(
+        "Funding",
+        "Trading",
+        "USDT",
+        "566.4065851610826"
+    );
+    console.log(result);
 };
 main();

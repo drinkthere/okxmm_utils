@@ -40,18 +40,16 @@ const init = () => {
         delayData[key] = [];
     }
 };
-const subscribeMsg = async () => {
-    for (let key of Object.keys(ipcMap)) {
-        const ipc = ipcMap[key];
+const subscribeMsg = async (key) => {
+    const ipc = ipcMap[key];
 
-        const subscriber = zmq.socket("sub");
-        subscriber.connect(ipc);
-        subscriber.subscribe("");
+    const subscriber = new zmq.Subscriber();
+    subscriber.connect(ipc);
+    subscriber.subscribe("");
+    subscribeArr.push(subscriber);
 
-        subscriber.on("message", (pbMsg, foo) => {
-            messageHandler(key, pbMsg);
-        });
-        subscribeArr.push(subscriber);
+    for await (const [topic, msg] of subscriber) {
+        messageHandler(key, topic);
     }
 };
 
@@ -100,7 +98,7 @@ const checkTimeouts = () => {
             }
             if (msg != "") {
                 log(msg);
-                sendAlert(msg);
+                //sendAlert(msg);
             }
         } catch (e) {
             console.error(e);
@@ -136,7 +134,9 @@ const calculateP99Delay = () => {
 
 const main = async () => {
     init();
-    await subscribeMsg();
+    for (let key of Object.keys(ipcMap)) {
+        subscribeMsg(key);
+    }
 
     // 每 1 秒检查一次超时和延迟
     checkTimeouts(); // 每10s计算一次延时
