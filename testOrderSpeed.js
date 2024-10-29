@@ -4,7 +4,7 @@ const { v4: uuidv4 } = require("uuid");
 const { log } = require("./utils/log");
 const OkxClient = require("./clients/okx");
 const StatOrderService = require("./services/statOrder");
-const symbol = "MATIC-USDT-SWAP";
+const symbol = "POL-USDT-SWAP";
 const cfgFile = `./configs/config.json`;
 if (!fileExists(cfgFile)) {
     log(`config file ${cfgFile} does not exits`);
@@ -40,7 +40,7 @@ let options = {
     localAddress: (localAddress = configs.okxLocalAddress[account]),
 };
 const exchangeClient = new OkxClient(options);
-
+const limit = 100;
 const orderUpdateHandler = async (orders) => {
     for (let order of orders) {
         // 使用clientOrderId作为锁的key，避免并发引起的更新错误
@@ -69,6 +69,8 @@ const main = async () => {
         orders: orderUpdateHandler,
     });
     exchangeClient.wsFuturesOrders();
+
+    let curr = 0;
     scheduleLoopTask(async () => {
         const clientOrderId = genClientOrderId();
         const start = Date.now();
@@ -78,7 +80,7 @@ const main = async () => {
             "BUY",
             symbol,
             1,
-            0.54,
+            0.3,
             {
                 newClientOrderId: clientOrderId,
             }
@@ -91,7 +93,11 @@ const main = async () => {
         await exchangeClient.cancelFuturesOrder(symbol, clientOrderId);
         console.log(`${clientOrderId} CANCELSUBMITTED ${Date.now()}`);
         await sleep(1000);
-        process.exit();
+        curr++;
+
+        if (curr >= limit) {
+            process.exit();
+        }
     });
 };
 main();

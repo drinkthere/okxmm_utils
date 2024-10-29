@@ -15,7 +15,7 @@ const configs = require(cfgFile);
 
 const { account, symbol } = require("minimist")(process.argv.slice(2));
 if (account == null) {
-    log("node cancel.js --account=xxx");
+    log("node cancel.js --account=xxx [--symbol=xxx]");
     process.exit();
 }
 
@@ -40,7 +40,7 @@ const cancelOrders = async () => {
     if (symbol != null) {
         await exchangeClient.cancelAllFuturesOrders(symbol);
     } else {
-        for (let sbl of ["BTC-USDT-SWAP", "ETH-USDT-SWAP", "MATIC-USDT-SWAP"]) {
+        for (let sbl of ["BTC-USDT-SWAP", "ETH-USDT-SWAP"]) {
             await exchangeClient.cancelAllFuturesOrders(sbl);
             await sleep(1000);
         }
