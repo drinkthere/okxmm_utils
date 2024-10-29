@@ -44,3 +44,11 @@ pm2 show hedge
 # 查看运行在某个 cpu index （16）上的进程
 
 ps -e -o pid,psr,comm | grep ' 16 '
+
+# 测试
+
+node testTickerSpeed.js --account=xxx --market=colo > ticker.result
+node testTickerDelayResult.js
+
+node testWsOrderSpeed.js --account=xxx --market=colo > private.log
+node testOrderSpeedResult.js
