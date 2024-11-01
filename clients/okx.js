@@ -14,7 +14,7 @@ class OkxClient {
             warning: (...params) => {},
             error: (...params) => {},
 
-            // silly: (...params) => console.log('silly', ...params),
+            //silly: (...params) => console.log('silly', ...params),
         };
 
         const market = options.hasOwnProperty("market")
@@ -122,6 +122,18 @@ class OkxClient {
                 }
             }
         });
+
+        this.wsClient.on("response", (event) => {
+            if (
+                event != null &&
+                event.op != null &&
+                event.op == "batch-orders"
+            ) {
+                for (let order of event.data) {
+                    console.log(order.clOrdId, order.sCode, order.sMsg);
+                }
+            }
+        });
     }
 
     // 将position格式化成标准输出
@@ -152,6 +164,9 @@ class OkxClient {
     _formatOrders(orders) {
         let finalOrders = [];
         orders.forEach((o) => {
+            // if (o.instId == 'POL-USDT-SWAP') {
+            //     console.log(o)
+            // }
             let executionType = "";
             let state = o.state;
             if (o.amendResult !== "") {
@@ -433,6 +448,36 @@ class OkxClient {
         this.wsClient.placeOrder(request);
     }
 
+    async wsPlaceFuturesIOCOrders(
+        side,
+        symbol,
+        quantity,
+        price,
+        params,
+        times = 3
+    ) {
+        side = side.toLowerCase();
+        const order = {
+            side: side,
+            instId: symbol,
+            ordType: "ioc",
+            px: price,
+            sz: quantity + "",
+            tdMode: "cross",
+            clOrdId: params.newClientOrderId,
+        };
+        let orders = [];
+        for (let i = 0; i < times; i++) {
+            orders.push(order);
+        }
+        const request = {
+            id: params.newClientOrderId,
+            op: "batch-orders",
+            args: orders,
+        };
+        this.wsClient.placeOrder(request);
+    }
+
     async placeFuturesOrder(side, symbol, quantity, price, params) {
         price = convertScientificToString(price);
         try {
@@ -456,6 +501,43 @@ class OkxClient {
                 side: order.side.toUpperCase(),
                 origQty: order.sz,
             };
+        } catch (e) {
+            console.error(
+                "placeFuturesOrder",
+                side,
+                symbol,
+                quantity,
+                price,
+                params,
+                e
+            );
+            if (e.data && e.data.length > 0) {
+                const errorInfo = e.data[0];
+                return {
+                    code: errorInfo.sCode,
+                    clientOrderId: errorInfo.clOrdId,
+                    msg: errorInfo.sMsg,
+                };
+            }
+        }
+    }
+
+    async placeIOCFuturesOrder(side, symbol, quantity, price, params) {
+        price = convertScientificToString(price);
+        try {
+            side = side.toLowerCase();
+            const posSide = side == "buy" ? "long" : "short";
+            const order = {
+                instId: symbol,
+                ordType: "ioc", // 后续可以根据params中的数据读取
+                side,
+                // posSide,
+                px: price,
+                sz: quantity + "",
+                tdMode: "cross",
+                clOrdId: params.newClientOrderId,
+            };
+            return this.client.submitOrder(order);
         } catch (e) {
             console.error(
                 "placeFuturesOrder",

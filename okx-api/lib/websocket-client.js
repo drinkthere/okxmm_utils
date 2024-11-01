@@ -767,6 +767,12 @@ class WebsocketClient extends events_1.EventEmitter {
                     Object.assign(Object.assign({}, msg), { wsKey })
                 );
             }
+            if ((0, util_1.isWsDataEvent)(msg)) {
+                return this.emit(
+                    "update",
+                    Object.assign(Object.assign({}, msg), { wsKey })
+                );
+            }
             if ((0, util_1.isWsLoginEvent)(msg)) {
                 // Successfully authenticated
                 if (msg.code === websocket_util_1.WS_EVENT_CODE_ENUM.OK) {
@@ -797,7 +803,8 @@ class WebsocketClient extends events_1.EventEmitter {
             }
             if (
                 (0, util_1.isWsSubscribeEvent)(msg) ||
-                (0, util_1.isWsUnsubscribeEvent)(msg)
+                (0, util_1.isWsUnsubscribeEvent)(msg) ||
+                (0, util_1.isWsBatchPlaceOrdersEvent)(msg)
             ) {
                 // this.logger.silly(`Ws subscribe reply:`, { ...msg, wsKey });
                 return this.emit(
@@ -805,6 +812,7 @@ class WebsocketClient extends events_1.EventEmitter {
                     Object.assign(Object.assign({}, msg), { wsKey })
                 );
             }
+
             if ((0, util_1.isConnCountEvent)(msg)) {
                 return this.emit(
                     "response",

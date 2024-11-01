@@ -15,6 +15,16 @@ export interface WsDataEvent<T = any> {
     };
     data: T;
 }
+export interface WsOpDataEvent<T = any> {
+    id: string;
+    op: string;
+    data: T;
+    code: string;
+    msg: string;
+    inTime: string;
+    outTime: string;
+
+}
 export interface WsLoginEvent extends WsEvent {
     event: 'login';
 }

@@ -4,6 +4,7 @@ export declare function isRawAPIResponse(response: unknown): response is APIResp
 /** Simple type guard that a websocket event extends a known event schema */
 export declare function isWsEvent(evtData: unknown): evtData is WsEvent;
 export declare function isWsDataEvent(evtData: unknown): evtData is WsDataEvent;
+export declare function isWsOpDataEvent(evtData: unknown): evtData is WsDataEvent;
 export declare function isWsErrorEvent(evt: unknown): boolean;
 /** Usually a response to authenticating over ws */
 export declare function isWsLoginEvent(evt: unknown): evt is WsLoginEvent;
@@ -11,6 +12,7 @@ export declare function isWsLoginEvent(evt: unknown): evt is WsLoginEvent;
 export declare function isWsSubscribeEvent(evtData: unknown): boolean;
 /** A response to unsubscribing from a channel */
 export declare function isWsUnsubscribeEvent(evtData: unknown): boolean;
+export declare function isWsBatchPlaceOrdersEvent(evtData: unknown): boolean;
 /** Information event */
 export declare function isConnCountEvent(evtData: unknown): boolean;
 /** Simple typescript guard never expecting code to reach it (will throw typescript error if called) */
