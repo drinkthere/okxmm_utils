@@ -44,6 +44,7 @@ class BinanceClient {
         const result = await this.client.futuresExchangeInfo();
         return result.symbols.filter((item) => {
             return (
+                item.status == "TRADING" &&
                 ![
                     "USDC",
                     "BUSD",
@@ -76,6 +77,7 @@ class BinanceClient {
         const result = await this.client.exchangeInfo();
         return result.symbols.filter((item) => {
             return (
+                item.status == "TRADING" &&
                 item.quoteAsset == "USDT" &&
                 ![
                     "USDC",

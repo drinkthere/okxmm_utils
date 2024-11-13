@@ -431,7 +431,7 @@ class OkxClient {
     async wsPlaceFuturesOrder(side, symbol, quantity, price, params) {
         side = side.toLowerCase();
         const request = {
-            id: params.newClientOrderId,
+            id: uuidv4().replace(/-/g, ""), //params.newClientOrderId.replace,
             op: "order",
             args: [
                 {
@@ -805,7 +805,7 @@ class OkxClient {
 
     async wsCancelFuturesOrder(symbol, clientOrderId) {
         const request = {
-            id: clientOrderId,
+            id: uuidv4().replace(/-/g, ""), //clientOrderId,
             op: "cancel-order",
             args: [
                 {

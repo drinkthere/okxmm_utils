@@ -4,7 +4,7 @@ const { v4: uuidv4 } = require("uuid");
 const { log } = require("./utils/log");
 const OkxClient = require("./clients/okx");
 const StatOrderService = require("./services/statOrder");
-const symbol = "POL-USDT-SWAP";
+const symbol = "BTC-USDT-SWAP";
 const cfgFile = `./configs/config.json`;
 if (!fileExists(cfgFile)) {
     log(`config file ${cfgFile} does not exits`);
@@ -39,28 +39,30 @@ let options = {
     localAddress,
 };
 const exchangeClient = new OkxClient(options);
-const limit = 100;
+const limit = 30;
 const orderUpdateHandler = async (orders) => {
     for (let order of orders) {
         // 使用clientOrderId作为锁的key，避免并发引起的更新错误
         const clientOrderId = order.clientOrderId;
-        if (["NEW"].includes(order.orderStatus) && order.symbol == symbol) {
-            console.log(
-                `${clientOrderId} NEW ${order.orderTime} ${Date.now()}`
-            );
-        } else if (
-            ["CANCELED"].includes(order.orderStatus) &&
-            order.symbol == symbol
-        ) {
-            console.log(
-                `${clientOrderId} CANCELED ${order.orderTime} ${Date.now()}`
-            );
+        if (clientOrderId.startsWith("O")) {
+            if (["NEW"].includes(order.orderStatus) && order.symbol == symbol) {
+                console.log(
+                    `${clientOrderId} NEW ${order.orderTime} ${Date.now()}`
+                );
+            } else if (
+                ["CANCELED"].includes(order.orderStatus) &&
+                order.symbol == symbol
+            ) {
+                console.log(
+                    `${clientOrderId} CANCELED ${order.orderTime} ${Date.now()}`
+                );
+            }
         }
     }
 };
 
 const genClientOrderId = () => {
-    return uuidv4().replace(/-/g, "");
+    return "O" + uuidv4().replace(/-/g, "").substr(4);
 };
 
 const main = async () => {
@@ -76,7 +78,7 @@ const main = async () => {
             const start = Date.now();
             // 下单
             console.log(`${clientOrderId} NEWSUBMIT ${Date.now()}`);
-            await exchangeClient.wsPlaceFuturesOrder("BUY", symbol, 1, 0.3, {
+            await exchangeClient.wsPlaceFuturesOrder("BUY", symbol, 1, 69000, {
                 newClientOrderId: clientOrderId,
             });
             console.log(`${clientOrderId} NEWSUBMITTED ${Date.now()}`);

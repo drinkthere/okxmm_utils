@@ -10,7 +10,7 @@ const maxNotUpdateTime = 10000; // 10s
 const maxP99DelayTime = 50; // 35
 const ipcMap = {
     tickerIPC: "tcp://127.0.0.1:56001",
-    orderBookIPC: "tcp://192.168.14.123:56002",
+    orderBookIPC: "tcp://127.0.0.1:56002",
 };
 const tickerRoot = protobuf.loadSync("./proto/okxticker.proto");
 const ticker = tickerRoot.lookupType("OkxTicker");

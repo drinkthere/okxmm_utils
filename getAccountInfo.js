@@ -66,7 +66,7 @@ const main = async () => {
         console.log(`position mode is ${positionMode}`);
         console.log();
         const leverage = await exchangeClient.getFuturesLeverage(
-            "ETH-USDT-SWAP"
+            "BTC-USDT-SWAP"
         );
         console.log(`leverage is ${leverage}`);
         const balances = await exchangeClient.getFuturesBalances();

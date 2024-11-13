@@ -70,7 +70,7 @@ function fileExists(filePath) {
     }
 }
 
-function deleteFilesInDirectory(directory) {
+function deleteFilesInDirectory(directory, filename = "") {
     fs.readdir(directory, (err, files) => {
         if (err) {
             console.error("Error reading directory:", err);
@@ -79,16 +79,31 @@ function deleteFilesInDirectory(directory) {
 
         // 遍历目录中的所有文件
         files.forEach((file) => {
-            const filePath = path.join(directory, file);
-
-            // 删除文件
-            fs.unlink(filePath, (err) => {
-                if (err) {
-                    console.error("Error deleting file:", err);
-                    return;
+            if (filename != "") {
+                // 删除指定文件
+                if (file == filename) {
+                    const filePath = path.join(directory, file);
+                    // 删除文件
+                    fs.unlink(filePath, (err) => {
+                        if (err) {
+                            console.error("Error deleting file:", err);
+                            return;
+                        }
+                        console.log("Deleted file:", filePath);
+                    });
                 }
-                console.log("Deleted file:", filePath);
-            });
+            } else {
+                // 全部删除
+                const filePath = path.join(directory, file);
+                // 删除文件
+                fs.unlink(filePath, (err) => {
+                    if (err) {
+                        console.error("Error deleting file:", err);
+                        return;
+                    }
+                    console.log("Deleted file:", filePath);
+                });
+            }
         });
     });
 }
