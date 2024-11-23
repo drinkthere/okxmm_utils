@@ -57,7 +57,7 @@ const orderUpdateHandler = async (orders) => {
         // 使用clientOrderId作为锁的key，避免并发引起的更新错误
         const clientOrderId = order.clientOrderId;
         await lock.acquire(clientOrderId, async () => {
-            if (["FILLED"].includes(order.orderStatus)) {
+            if (["FILLED", "PARTIALLY_FILLED"].includes(order.orderStatus)) {
                 const symbol = order.symbol;
                 if (!volContractMap.hasOwnProperty(symbol)) {
                     console.error(`${symbol}'s ctVal configuration is missing`);
@@ -65,10 +65,10 @@ const orderUpdateHandler = async (orders) => {
                 }
 
                 const side = order.side;
-                const quantity = order.originalQuantity;
+                const quantity = order.filledQuantity;
                 const amount = quantity * parseFloat(volContractMap[symbol]);
                 const price = order.lastFilledPrice;
-                const notional = price * amount;
+                const notional = order.filledNotional;
                 const maker = order.isMaker;
 
                 const msg = `${account} ${clientOrderId} ${symbol} ${side} ${order.orderStatus} ${amount}@${price} Maker(${maker})`;

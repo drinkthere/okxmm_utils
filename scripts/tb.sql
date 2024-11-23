@@ -1,5 +1,5 @@
 # for usdt market making program
-CREATE TABLE `tb_order_dcs061` (
+CREATE TABLE `tb_order_bb011` (
   `id` int NOT NULL AUTO_INCREMENT,
   `symbol` varchar(20) NOT NULL DEFAULT '',
   `side` varchar(5) NOT NULL DEFAULT '',
@@ -13,11 +13,11 @@ CREATE TABLE `tb_order_dcs061` (
   KEY `idx_create_time` (`create_time`)
 ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
-CREATE EVENT IF NOT EXISTS `clear_orders_dcs061`
+CREATE EVENT IF NOT EXISTS `clear_orders_bb011`
 ON SCHEDULE EVERY 1 DAY
 STARTS (TIMESTAMP(CURRENT_DATE) + INTERVAL 1 DAY)
 DO
-  DELETE FROM `tb_order_dcs061` WHERE create_time < NOW() - INTERVAL 7 DAY;
+  DELETE FROM `tb_order_bb011` WHERE create_time < NOW() - INTERVAL 7 DAY;
 
 
 SELECT 
@@ -51,7 +51,7 @@ STARTS (TIMESTAMP(CURRENT_DATE) + INTERVAL 1 DAY)
 DO
   DELETE FROM tb_cmm_order_btech001 WHERE create_time < NOW() - INTERVAL 7 DAY;
 
-  CREATE TABLE `tb_cmm_balance` (
+CREATE TABLE `tb_cmm_balance` (
   `id` int NOT NULL AUTO_INCREMENT,
   `account` varchar(20) NOT NULL DEFAULT '',
   `data` json NOT NULL,
@@ -140,3 +140,33 @@ SELECT
 FROM 
     first_data,
     last_data;
+
+
+CREATE TABLE `tb_spot_balance` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `account` varchar(20) NOT NULL DEFAULT '',
+  `data` json NOT NULL,
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_account_create_time` (`account`, `create_time`)
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+CREATE TABLE `tb_spot_order_fbg005` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `symbol` varchar(20) NOT NULL DEFAULT '',
+  `side` varchar(5) NOT NULL DEFAULT '',
+  `quantity` int NOT NULL DEFAULT '0',
+  `amount` float NOT NULL DEFAULT '0',
+  `price` float NOT NULL DEFAULT '0',
+  `notional` float NOT NULL DEFAULT '0',
+  `maker` tinyint(1) NULL DEFAULT 1,
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_create_time` (`create_time`)
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+CREATE EVENT IF NOT EXISTS `clear_spot_orders_fbg005`
+ON SCHEDULE EVERY 1 DAY
+STARTS (TIMESTAMP(CURRENT_DATE) + INTERVAL 1 DAY)
+DO
+  DELETE FROM `tb_order_fbg005` WHERE create_time < NOW() - INTERVAL 7 DAY;

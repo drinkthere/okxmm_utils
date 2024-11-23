@@ -11,13 +11,13 @@ const alertCooldown = 5 * 60 * 1000; // 5 minutes in milliseconds
 const maxNotUpdateTime = 10000; // 10s
 const maxP99DelayTime = 50; // 35
 const ipcMap = {
-    btcSpotIPC: "tcp://127.0.0.1:55555",
-    ethSpotIPC: "tcp://127.0.0.1:55556",
-    btcFuturesIPC: "tcp://127.0.0.1:55557",
-    ethFuturesIPC: "tcp://127.0.0.1:55558",
+    btcEthFuturesIPC: "tcp://127.0.0.1:21001",
+    altcoinFuturesIPC: "tcp://127.0.0.1:21002",
+    btcEthSpotIPC: "tcp://127.0.0.1:20001",
+    altcoinSpotIPC: "tcp://127.0.0.1:21002",
 };
-const pbRoot = protobuf.loadSync("./proto/ticker.proto");
-const marketData = pbRoot.lookupType("MarketData");
+const pbRoot = protobuf.loadSync("./proto/newticker.proto");
+const tickerInfo = pbRoot.lookupType("TickerInfo");
 
 let subscribeArr = [];
 let lastUpdateTime = {};
@@ -54,7 +54,7 @@ const subscribeMsg = async (key) => {
 };
 
 const messageHandler = (key, pbMsg) => {
-    const message = marketData.decode(pbMsg);
+    const message = tickerInfo.decode(pbMsg);
     const currentTimestamp = Date.now();
     lastUpdateTime[key] = currentTimestamp;
 
@@ -98,7 +98,7 @@ const checkTimeouts = () => {
             }
             if (msg != "") {
                 log(msg);
-                //sendAlert(msg);
+                sendAlert(msg);
             }
         } catch (e) {
             console.error(e);
